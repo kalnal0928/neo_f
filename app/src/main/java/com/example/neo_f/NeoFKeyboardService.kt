@@ -2,9 +2,11 @@ package com.example.neo_f
 
 import android.annotation.SuppressLint
 import android.inputmethodservice.InputMethodService
+import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -23,6 +25,10 @@ class NeoFKeyboardService : InputMethodService() {
     private var koreanKeyboardLayout: LinearLayout? = null
     private var englishKeyboardLayout: LinearLayout? = null
     private var symbolKeyboardLayout: LinearLayout? = null
+    
+    private var audioManager: AudioManager? = null
+    private var isSoundEnabled = true
+    private var keyboardView: View? = null
 
     private var isKoreanShifted = false
         set(value) {
@@ -50,6 +56,27 @@ class NeoFKeyboardService : InputMethodService() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate called")
+        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        isSoundEnabled = SettingsActivity.isSoundEnabled(this)
+    }
+    
+    private fun applyTextSize(view: View) {
+        val textSize = SettingsActivity.getTextSize(this)
+        Log.d(TAG, "Applying text size: $textSize sp")
+        
+        // 모든 버튼에 글자 크기 적용
+        applyTextSizeToButtons(view, textSize)
+    }
+    
+    private fun applyTextSizeToButtons(view: View, textSize: Float) {
+        if (view is Button) {
+            view.textSize = textSize
+            Log.d(TAG, "Applied text size $textSize to button: ${view.text}")
+        } else if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) {
+                applyTextSizeToButtons(view.getChildAt(i), textSize)
+            }
+        }
     }
     
     override fun onEvaluateFullscreenMode(): Boolean {
@@ -79,31 +106,37 @@ class NeoFKeyboardService : InputMethodService() {
         }
         
         return try {
-            val keyboardView = layoutInflater.inflate(R.layout.keyboard_layout, null)
+            val view = layoutInflater.inflate(R.layout.keyboard_layout, null)
             Log.d(TAG, "Layout inflated successfully")
+            
+            // 뷰 저장
+            keyboardView = view
 
             setupHangulEngine()
             Log.d(TAG, "HangulEngine setup complete")
             
-            setupViewReferences(keyboardView)
+            setupViewReferences(view)
             Log.d(TAG, "View references setup complete")
             
-            setupKoreanKeyboardListeners(keyboardView)
+            setupKoreanKeyboardListeners(view)
             Log.d(TAG, "Korean keyboard listeners setup complete")
             
-            setupEnglishKeyboardListeners(keyboardView)
+            setupEnglishKeyboardListeners(view)
             Log.d(TAG, "English keyboard listeners setup complete")
             
-            setupSymbolKeyboardListeners(keyboardView)
+            setupSymbolKeyboardListeners(view)
             Log.d(TAG, "Symbol keyboard listeners setup complete")
             
-            setupCommonFunctionalKeys(keyboardView)
+            setupCommonFunctionalKeys(view)
             Log.d(TAG, "Common functional keys setup complete")
 
             setKeyboardMode(KeyboardMode.KOREAN)
             Log.d(TAG, "Keyboard mode set to KOREAN")
+            
+            applyTextSize(view)
+            Log.d(TAG, "Text size applied")
 
-            keyboardView
+            view
         } catch (e: Exception) {
             Log.e(TAG, "Error creating input view", e)
             e.printStackTrace()
@@ -115,11 +148,26 @@ class NeoFKeyboardService : InputMethodService() {
         super.onStartInput(attribute, restarting)
         Log.d(TAG, "onStartInput called, restarting: $restarting")
         Log.d(TAG, "InputType: ${attribute?.inputType}")
+        
+        // 설정 다시 로드
+        isSoundEnabled = SettingsActivity.isSoundEnabled(this)
+        
+        // 글자 크기 적용
+        keyboardView?.let { view ->
+            applyTextSize(view)
+        }
     }
     
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         Log.d(TAG, "onStartInputView called, restarting: $restarting")
+        
+        // 키보드가 표시될 때마다 설정 적용
+        keyboardView?.let { view ->
+            val textSize = SettingsActivity.getTextSize(this)
+            Log.d(TAG, "Reapplying text size: $textSize sp")
+            applyTextSize(view)
+        } ?: Log.w(TAG, "keyboardView is null, cannot apply text size")
     }
     
     override fun onBindInput() {
@@ -130,11 +178,41 @@ class NeoFKeyboardService : InputMethodService() {
     override fun onUnbindInput() {
         super.onUnbindInput()
         Log.d(TAG, "onUnbindInput called")
+        cleanupResources()
     }
     
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy called")
+        cleanupResources()
+    }
+    
+    private fun cleanupResources() {
+        Log.d(TAG, "Cleaning up resources")
+        
+        // 백스페이스 핸들러 정리
+        backspaceRunnable?.let { 
+            backspaceHandler.removeCallbacks(it)
+            backspaceRunnable = null
+        }
+        
+        // HangulEngine 리셋
+        hangulEngine?.reset()
+        composingText = ""
+        
+        // 버튼 참조 정리
+        koreanShiftKey = null
+        englishShiftKey = null
+        koreanKeyboardLayout = null
+        englishKeyboardLayout = null
+        symbolKeyboardLayout = null
+        englishKeyButtons.clear()
+        keyboardView = null
+        
+        // 상태 초기화
+        isKoreanShifted = false
+        isEnglishShifted = false
+        currentKeyboardMode = KeyboardMode.KOREAN
     }
 
     private fun setupViewReferences(view: View) {
@@ -146,7 +224,11 @@ class NeoFKeyboardService : InputMethodService() {
     }
 
     private fun setupHangulEngine() {
-        hangulEngine = HangulEngine { result ->
+        // 설정에서 타이머 값 읽기
+        val syllableTimeout = SettingsActivity.getSyllableTimeout(this)
+        Log.d(TAG, "Syllable timeout set to: $syllableTimeout ms")
+        
+        hangulEngine = HangulEngine({ result ->
             val ic = currentInputConnection ?: return@HangulEngine
             
             // 조합 중인 텍스트가 있으면 먼저 제거
@@ -167,7 +249,7 @@ class NeoFKeyboardService : InputMethodService() {
             } else {
                 composingText = ""
             }
-        }
+        }, syllableTimeout)
     }
 
     private fun setupKoreanKeyboardListeners(view: View) {
@@ -179,6 +261,7 @@ class NeoFKeyboardService : InputMethodService() {
 
         keyButtons.forEach { (id, char) ->
             view.findViewById<Button?>(id)?.setOnClickListener {
+                playKeySound()
                 val charToSend = if (isKoreanShifted) {
                     when (char) {
                         'ㄱ' -> 'ㄲ'; 'ㄷ' -> 'ㄸ'; 'ㅂ' -> 'ㅃ'; 'ㅅ' -> 'ㅆ'; 'ㅈ' -> 'ㅉ'
@@ -204,6 +287,7 @@ class NeoFKeyboardService : InputMethodService() {
                 val button = view.findViewById<Button?>(id)
                 englishKeyButtons[id] = button
                 button?.setOnClickListener {
+                    playKeySound()
                     var text = button.text.toString()
                     if (isEnglishShifted) {
                         text = text.uppercase()
@@ -294,15 +378,18 @@ class NeoFKeyboardService : InputMethodService() {
 
         symbolKeys.forEach { (id, text) ->
             view.findViewById<Button?>(id)?.setOnClickListener {
+                playKeySound()
                 currentInputConnection?.commitText(text, 1)
             }
         }
 
         view.findViewById<Button?>(R.id.key_space_sym)?.setOnClickListener {
+            playKeySound()
             currentInputConnection?.commitText(" ", 1)
         }
 
         view.findViewById<Button?>(R.id.key_enter_sym)?.setOnClickListener {
+            playKeySound()
             sendEnterKey()
         }
     }
@@ -334,12 +421,14 @@ class NeoFKeyboardService : InputMethodService() {
         view.findViewById<Button?>(R.id.key_backspace_sym)?.setOnTouchListener(backspaceTouchListener)
 
         val enterListener = View.OnClickListener {
+            playKeySound()
             sendEnterKey()
         }
         view.findViewById<Button?>(R.id.key_enter)?.setOnClickListener(enterListener)
         view.findViewById<Button?>(R.id.key_enter_eng)?.setOnClickListener(enterListener)
 
         val spaceListener = View.OnClickListener {
+            playKeySound()
             if (currentKeyboardMode == KeyboardMode.KOREAN) {
                 hangulEngine?.processKey(' ')
             } else {
@@ -379,8 +468,10 @@ class NeoFKeyboardService : InputMethodService() {
             setKeyboardMode(nextMode)
         }
 
+        // 한글 키보드의 ㄲ 버튼 (된소리 변환)
         koreanShiftKey?.setOnClickListener {
-            isKoreanShifted = !isKoreanShifted
+            playKeySound()
+            hangulEngine?.applyDoubleConsonant()
         }
     }
 
@@ -390,16 +481,25 @@ class NeoFKeyboardService : InputMethodService() {
         if (currentKeyboardMode == KeyboardMode.KOREAN) {
             val newComposing = hangulEngine?.backspace() ?: "BACKSPACE"
             if (newComposing == "BACKSPACE") {
+                // 조합 중인 문자가 없으면 이전 문자 삭제
                 ic.deleteSurroundingText(1, 0)
                 composingText = ""
             } else {
+                // 조합 중인 문자 처리
                 if (composingText.isNotEmpty()) {
+                    // 기존 조합 문자 제거
+                    ic.finishComposingText()
                     ic.deleteSurroundingText(composingText.length, 0)
                 }
+                
                 if (newComposing.isNotEmpty()) {
+                    // 새로운 조합 문자 설정
                     ic.setComposingText(newComposing, 1)
+                    composingText = newComposing
+                } else {
+                    // 조합이 완전히 끝난 경우 (초성만 있다가 지워진 경우)
+                    composingText = ""
                 }
-                composingText = newComposing
             }
         } else {
             ic.deleteSurroundingText(1, 0)
@@ -444,7 +544,21 @@ class NeoFKeyboardService : InputMethodService() {
 
     override fun onFinishInput() {
         super.onFinishInput()
+        Log.d(TAG, "onFinishInput called")
+        
+        // 백스페이스 핸들러 정리
+        backspaceRunnable?.let { 
+            backspaceHandler.removeCallbacks(it)
+            backspaceRunnable = null
+        }
+        
         hangulEngine?.reset()
         composingText = ""
+    }
+    
+    private fun playKeySound() {
+        if (isSoundEnabled) {
+            audioManager?.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, 0.5f)
+        }
     }
 }

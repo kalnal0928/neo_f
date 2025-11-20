@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupHangulEngine() {
-        hangulEngine = HangulEngine { result ->
+        hangulEngine = HangulEngine({ result ->
             val editable = editText?.text ?: return@HangulEngine
             val currentEditableLength = editable.length
 
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
                 editable.append(result.committed + result.composing)
             }
             composingText = result.composing
-        }
+        }, 300L) // 기본 타이머 값 300ms
     }
 
     private fun setupKoreanKeyboardListeners() {

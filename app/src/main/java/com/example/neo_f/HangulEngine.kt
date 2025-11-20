@@ -1,6 +1,9 @@
 package com.example.neo_f
 
-class HangulEngine(private val listener: (Result) -> Unit) {
+class HangulEngine(
+    private val listener: (Result) -> Unit,
+    var syllableTimeoutMs: Long = 300L  // 음절 조합 타이머 (기본 300ms)
+) {
 
     // 초성, 중성, 종성 리스트
     private val CHOSEONG_LIST = listOf('ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ')
@@ -28,66 +31,120 @@ class HangulEngine(private val listener: (Result) -> Unit) {
         'ㅀ' to ('ㄹ' to 'ㅎ'), 'ㅄ' to ('ㅂ' to 'ㅅ'), 'ㄲ' to ('ㄱ' to 'ㄱ'), 'ㅆ' to ('ㅅ' to 'ㅅ')
     )
     private val ASPIRATED_CONSONANTS = mapOf('ㄱ' to 'ㅋ', 'ㄷ' to 'ㅌ', 'ㅂ' to 'ㅍ', 'ㅈ' to 'ㅊ', 'ㅇ' to 'ㅎ')
+    
+    // 된소리 변환 (ㄲ 버튼으로 변환)
+    private val DOUBLE_CONSONANTS = mapOf('ㄱ' to 'ㄲ', 'ㄷ' to 'ㄸ', 'ㅂ' to 'ㅃ', 'ㅅ' to 'ㅆ', 'ㅈ' to 'ㅉ')
+    
+    // 특수 조합 (ㅅㅅ → ㅆ, ㅁㅁ → ㅂ)
+    private val SPECIAL_COMBINATIONS = mapOf('ㅅ' to 'ㅆ', 'ㅁ' to 'ㅂ')
 
     // 상태 변수
     private var currentState = State()
-    private var lastConsonant: Char? = null
-    private var lastConsonantTime: Long = 0
-    private val DOUBLE_TAP_THRESHOLD_MS = 300L
+    private var lastKey: Char? = null
+    private var lastKeyTime: Long = 0
 
     data class State(var choseong: Char? = null, var jungseong: Char? = null, var jongseong: Char? = null)
     data class Result(val committed: String = "", val composing: String = "")
+    
+    // 된소리 변환 함수 (ㄲ 버튼 전용)
+    fun applyDoubleConsonant() {
+        var changed = false
+        
+        // 종성이 있으면 종성을 된소리로 변환
+        if (currentState.jongseong != null && currentState.jongseong in DOUBLE_CONSONANTS.keys) {
+            currentState.jongseong = DOUBLE_CONSONANTS[currentState.jongseong]
+            changed = true
+        }
+        // 초성만 있으면 초성을 된소리로 변환
+        else if (currentState.choseong != null && currentState.jungseong == null && currentState.choseong in DOUBLE_CONSONANTS.keys) {
+            currentState.choseong = DOUBLE_CONSONANTS[currentState.choseong]
+            changed = true
+        }
+        
+        if (changed) {
+            listener(Result(composing = combineHangul()))
+        }
+    }
 
     fun processKey(key: Char) {
         val currentTime = System.currentTimeMillis()
         val isConsonant = key in CHOSEONG_LIST
         val isVowel = key in JUNGSEONG_LIST
-        val isDoubleTappable = key in ASPIRATED_CONSONANTS.keys
+        val timeSinceLastKey = currentTime - lastKeyTime
         var committed = ""
 
-        if (isDoubleTappable && lastConsonant == key && (currentTime - lastConsonantTime) < DOUBLE_TAP_THRESHOLD_MS) {
-            val aspiratedKey = ASPIRATED_CONSONANTS[key]!!
+        // 같은 키를 타이머 내에 두 번 눌렀을 때 특수 변환
+        if (lastKey == key && timeSinceLastKey < syllableTimeoutMs) {
             var replaced = false
-            if (currentState.jongseong == key) {
-                currentState.jongseong = aspiratedKey
-                replaced = true
-            } else if (currentState.choseong == key && currentState.jungseong == null) {
-                currentState.choseong = aspiratedKey
-                replaced = true
+            
+            // 1. 격음 변환 (ㄱㄱ → ㅋ, ㄷㄷ → ㅌ, ㅂㅂ → ㅍ, ㅈㅈ → ㅊ)
+            if (key in ASPIRATED_CONSONANTS.keys) {
+                val aspiratedKey = ASPIRATED_CONSONANTS[key]!!
+                
+                if (currentState.jongseong == key) {
+                    currentState.jongseong = aspiratedKey
+                    replaced = true
+                } else if (currentState.choseong == key && currentState.jungseong == null) {
+                    currentState.choseong = aspiratedKey
+                    replaced = true
+                }
+            }
+            // 2. 특수 조합 (ㅅㅅ → ㅆ, ㅁㅁ → ㅂ)
+            else if (key in SPECIAL_COMBINATIONS.keys) {
+                val specialKey = SPECIAL_COMBINATIONS[key]!!
+                
+                if (currentState.jongseong == key) {
+                    currentState.jongseong = specialKey
+                    replaced = true
+                } else if (currentState.choseong == key && currentState.jungseong == null) {
+                    currentState.choseong = specialKey
+                    replaced = true
+                }
             }
 
             if (replaced) {
-                lastConsonant = null
-                lastConsonantTime = 0
+                // 변환 후에도 원래 키를 lastKey로 유지 (다음 변환을 위해)
+                lastKey = key
+                lastKeyTime = currentTime
                 listener(Result(composing = combineHangul()))
                 return
             }
         }
 
-        if (isConsonant) {
-            lastConsonant = key
-            lastConsonantTime = currentTime
-        } else {
-            lastConsonant = null
-            lastConsonantTime = 0
-        }
+        lastKey = key
+        lastKeyTime = currentTime
 
         if (isConsonant) {
             if (currentState.jungseong != null) {
+                // 중성이 있는 경우 - 종성으로 추가 시도
                 val newJongseong = JONGSEONG_COMBINATIONS[currentState.jongseong to key]
                 if (currentState.jongseong == null && JONGSEONG_LIST.contains(key)) {
                     currentState.jongseong = key
                 } else if (newJongseong != null) {
                     currentState.jongseong = newJongseong
                 } else {
+                    // 종성 조합 불가 - 현재 음절 완성하고 새 초성 시작
                     committed = commitCurrentState()
                     currentState.choseong = key
                 }
             } else {
-                if (currentState.choseong != null) {
-                    committed = commitCurrentState()
+                // 중성이 없는 경우
+                if (currentState.choseong != null && timeSinceLastKey > syllableTimeoutMs) {
+                    // 타이머 초과 시 이전 자음을 바로 커밋하고 새 초성 시작
+                    committed += currentState.choseong.toString()
+                    currentState = State() // reset() 대신 상태만 초기화
+                    currentState.choseong = key
+                    // lastKey와 lastKeyTime은 이미 위에서 설정됨
+                } else if (currentState.choseong != null) {
+                    // 타이머 내에 자음이 연속으로 오면 이전 자음 커밋
+                    committed += currentState.choseong.toString()
+                    currentState = State() // reset() 대신 상태만 초기화
+                    currentState.choseong = key
+                    // lastKey와 lastKeyTime은 이미 위에서 설정됨
+                } else {
+                    // 아무것도 없는 경우 - 새 초성 시작
+                    currentState.choseong = key
                 }
-                currentState.choseong = key
             }
         } else if (isVowel) {
             if (currentState.jongseong != null) {
@@ -113,8 +170,8 @@ class HangulEngine(private val listener: (Result) -> Unit) {
                     currentState.jungseong = key
                 }
             } else {
-                committed = commitCurrentState()
-                currentState.jungseong = key
+                // 초성 없이 모음만 입력하는 경우 - 모음을 바로 커밋
+                committed += key.toString()
             }
         }
 
@@ -128,8 +185,8 @@ class HangulEngine(private val listener: (Result) -> Unit) {
     }
 
     fun backspace(): String {
-        lastConsonant = null
-        lastConsonantTime = 0
+        lastKey = null
+        lastKeyTime = 0
 
         if (currentState.jongseong != null) {
             val originalJongseong = currentState.jongseong
@@ -149,8 +206,8 @@ class HangulEngine(private val listener: (Result) -> Unit) {
 
     fun reset() {
         currentState = State()
-        lastConsonant = null
-        lastConsonantTime = 0
+        lastKey = null
+        lastKeyTime = 0
     }
 
     private fun combineHangul(): String {
