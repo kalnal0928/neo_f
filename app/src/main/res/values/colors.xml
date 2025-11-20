@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Keyboard-specific colors -->
+    <color name="keyboard_background">#212121</color>
+    <color name="key_background_normal">#424242</color>
+    <color name="key_background_pressed">#616161</color>
+    <color name="key_text_color">#FFFFFF</color>
+    <color name="key_functional_background">#616161</color>
+</resources>
