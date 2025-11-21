@@ -38,6 +38,9 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_SHOW_NUMBER_ROW = "show_number_row"
         private const val KEY_KEY_SPACING = "key_spacing"
         private const val KEY_KEY_CORNER_RADIUS = "key_corner_radius"
+        private const val KEY_TEXT_COLOR = "text_color"
+        private const val KEY_KEY_BACKGROUND_COLOR = "key_background_color"
+        private const val KEY_FUNCTIONAL_KEY_COLOR = "functional_key_color"
         
         private const val DEFAULT_TIMEOUT = 300L
         private const val DEFAULT_SOUND_ENABLED = true
@@ -50,6 +53,9 @@ class SettingsActivity : AppCompatActivity() {
         private const val DEFAULT_SHOW_NUMBER_ROW = false
         private const val DEFAULT_KEY_SPACING = 2
         private const val DEFAULT_KEY_CORNER_RADIUS = 4
+        private const val DEFAULT_TEXT_COLOR = 0xFFFFFFFF.toInt()  // 흰색
+        private const val DEFAULT_KEY_BACKGROUND_COLOR = 0xFF424242.toInt()  // 회색
+        private const val DEFAULT_FUNCTIONAL_KEY_COLOR = 0xFF616161.toInt()  // 진한 회색
 
         fun getSyllableTimeout(context: Context): Long {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -79,6 +85,8 @@ class SettingsActivity : AppCompatActivity() {
         fun setTextSize(context: Context, textSize: Float) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putFloat(KEY_TEXT_SIZE, textSize).apply()
+            // UI 변경이 필요한 설정이므로 재생성 플래그 설정
+            prefs.edit().putBoolean("needs_recreate", true).apply()
         }
 
         fun isVibrationEnabled(context: Context): Boolean {
@@ -149,6 +157,8 @@ class SettingsActivity : AppCompatActivity() {
         fun setKeySpacing(context: Context, spacing: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putInt(KEY_KEY_SPACING, spacing).apply()
+            // UI 변경이 필요한 설정이므로 재생성 플래그 설정
+            prefs.edit().putBoolean("needs_recreate", true).apply()
         }
 
         fun getKeyCornerRadius(context: Context): Int {
@@ -159,6 +169,41 @@ class SettingsActivity : AppCompatActivity() {
         fun setKeyCornerRadius(context: Context, radius: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putInt(KEY_KEY_CORNER_RADIUS, radius).apply()
+            // UI 변경이 필요한 설정이므로 재생성 플래그 설정
+            prefs.edit().putBoolean("needs_recreate", true).apply()
+        }
+
+        fun getTextColor(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_TEXT_COLOR, DEFAULT_TEXT_COLOR)
+        }
+
+        fun setTextColor(context: Context, color: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_TEXT_COLOR, color).apply()
+            prefs.edit().putBoolean("needs_recreate", true).apply()
+        }
+
+        fun getKeyBackgroundColor(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_KEY_BACKGROUND_COLOR, DEFAULT_KEY_BACKGROUND_COLOR)
+        }
+
+        fun setKeyBackgroundColor(context: Context, color: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_KEY_BACKGROUND_COLOR, color).apply()
+            prefs.edit().putBoolean("needs_recreate", true).apply()
+        }
+
+        fun getFunctionalKeyColor(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_FUNCTIONAL_KEY_COLOR, DEFAULT_FUNCTIONAL_KEY_COLOR)
+        }
+
+        fun setFunctionalKeyColor(context: Context, color: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_FUNCTIONAL_KEY_COLOR, color).apply()
+            prefs.edit().putBoolean("needs_recreate", true).apply()
         }
     }
 
@@ -182,6 +227,7 @@ class SettingsActivity : AppCompatActivity() {
                 0 -> "입력"
                 1 -> "디자인"
                 2 -> "피드백"
+                3 -> "정보"
                 else -> ""
             }
         }.attach()
@@ -218,6 +264,9 @@ class SettingsActivity : AppCompatActivity() {
         setShowNumberRow(this, DEFAULT_SHOW_NUMBER_ROW)
         setKeySpacing(this, DEFAULT_KEY_SPACING)
         setKeyCornerRadius(this, DEFAULT_KEY_CORNER_RADIUS)
+        setTextColor(this, DEFAULT_TEXT_COLOR)
+        setKeyBackgroundColor(this, DEFAULT_KEY_BACKGROUND_COLOR)
+        setFunctionalKeyColor(this, DEFAULT_FUNCTIONAL_KEY_COLOR)
         
         // 프래그먼트 새로고침
         recreate()
@@ -226,13 +275,14 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private class SettingsPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
-        override fun getItemCount(): Int = 3
+        override fun getItemCount(): Int = 4
 
         override fun createFragment(position: Int): Fragment {
             return when (position) {
                 0 -> InputSettingsFragment()
                 1 -> DesignSettingsFragment()
                 2 -> FeedbackSettingsFragment()
+                3 -> AboutSettingsFragment()
                 else -> InputSettingsFragment()
             }
         }

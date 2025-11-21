@@ -76,6 +76,8 @@ class HangulEngine(
         if (key == ' ') {
             val committed = commitCurrentState()
             listener(Result(committed + " ", ""))
+            lastKey = key
+            lastKeyTime = currentTime
             return
         }
         
@@ -122,9 +124,6 @@ class HangulEngine(
             }
         }
 
-        lastKey = key
-        lastKeyTime = currentTime
-
         if (isConsonant) {
             if (currentState.jungseong != null) {
                 // 중성이 있는 경우 - 종성으로 추가 시도
@@ -143,15 +142,13 @@ class HangulEngine(
                 if (currentState.choseong != null && timeSinceLastKey > syllableTimeoutMs) {
                     // 타이머 초과 시 이전 자음을 바로 커밋하고 새 초성 시작
                     committed += currentState.choseong.toString()
-                    currentState = State() // reset() 대신 상태만 초기화
+                    currentState = State()
                     currentState.choseong = key
-                    // lastKey와 lastKeyTime은 이미 위에서 설정됨
                 } else if (currentState.choseong != null) {
                     // 타이머 내에 자음이 연속으로 오면 이전 자음 커밋
                     committed += currentState.choseong.toString()
-                    currentState = State() // reset() 대신 상태만 초기화
+                    currentState = State()
                     currentState.choseong = key
-                    // lastKey와 lastKeyTime은 이미 위에서 설정됨
                 } else {
                     // 아무것도 없는 경우 - 새 초성 시작
                     currentState.choseong = key
@@ -179,7 +176,6 @@ class HangulEngine(
                     // 1. 같은 모음을 타이머 내에 두 번 눌렀을 때 ㅑ, ㅕ, ㅛ, ㅠ 변환
                     if (currentState.jungseong == key && timeSinceLastKey < syllableTimeoutMs && key in VOWEL_DOUBLE_TO_Y.keys) {
                         currentState.jungseong = VOWEL_DOUBLE_TO_Y[key]!!
-                        // return 하지 않고 계속 진행하여 listener 호출
                     }
                     // 2. 중성 조합 시도 (ㅗ+ㅏ=ㅘ 등)
                     else {
@@ -203,6 +199,10 @@ class HangulEngine(
             }
         }
 
+        // 처리 완료 후 lastKey와 lastKeyTime 업데이트
+        lastKey = key
+        lastKeyTime = currentTime
+        
         listener(Result(committed, combineHangul()))
     }
 

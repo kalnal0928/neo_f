@@ -1,6 +1,7 @@
 package com.example.neo_f
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
 import android.os.Handler
@@ -36,6 +37,7 @@ class NeoFKeyboardService : InputMethodService() {
     private var isScaleEffectEnabled = true
     private var touchColor = 0xFF4CAF50.toInt()
     private var keyboardView: View? = null
+    private var needsRecreate = false
 
     private var isKoreanShifted = false
         set(value) {
@@ -82,8 +84,12 @@ class NeoFKeyboardService : InputMethodService() {
     
     private fun applyTextSizeToButtons(view: View, textSize: Float) {
         if (view is Button) {
-            view.textSize = textSize
-            Log.d(TAG, "Applied text size $textSize to button: ${view.text}")
+            // setTextSize는 기본적으로 SP 단위를 사용
+            view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, textSize)
+            // 텍스트 색상도 적용
+            val textColor = SettingsActivity.getTextColor(this)
+            view.setTextColor(textColor)
+            Log.d(TAG, "Applied text size $textSize sp and color to button: ${view.text}")
         } else if (view is android.view.ViewGroup) {
             for (i in 0 until view.childCount) {
                 applyTextSizeToButtons(view.getChildAt(i), textSize)
@@ -123,39 +129,30 @@ class NeoFKeyboardService : InputMethodService() {
         if (view is Button) {
             val radiusPx = (radiusDp * resources.displayMetrics.density).toInt()
             
-            // 현재 배경색 가져오기
-            val currentBg = view.background
-            val backgroundColor = when {
-                currentBg is android.graphics.drawable.ColorDrawable -> currentBg.color
-                currentBg is android.graphics.drawable.GradientDrawable -> {
-                    // GradientDrawable인 경우 기본 색상 사용
-                    try {
-                        val colorField = android.graphics.drawable.GradientDrawable::class.java.getDeclaredField("mSolidColors")
-                        colorField.isAccessible = true
-                        val colors = colorField.get(currentBg) as? android.content.res.ColorStateList
-                        colors?.defaultColor ?: resources.getColor(R.color.key_background_normal, null)
-                    } catch (e: Exception) {
-                        resources.getColor(R.color.key_background_normal, null)
-                    }
+            // 버튼의 현재 상태 저장
+            val wasClickable = view.isClickable
+            val wasEnabled = view.isEnabled
+            val wasFocusable = view.isFocusable
+            
+            // 사용자 설정 색상 가져오기
+            val keyBackgroundColor = SettingsActivity.getKeyBackgroundColor(this)
+            val functionalKeyColor = SettingsActivity.getFunctionalKeyColor(this)
+            
+            // 버튼 ID로 배경색 결정
+            val backgroundColor = when (view.id) {
+                R.id.key_mode_kor, R.id.key_mode_num, R.id.key_mode_eng, R.id.key_mode_sym,
+                R.id.key_shift, R.id.key_shift_eng, R.id.key_hangul_num,
+                R.id.key_space, R.id.key_space_eng, R.id.key_space_num, R.id.key_space_sym,
+                R.id.key_enter, R.id.key_enter_eng, R.id.key_search_num, R.id.key_enter_sym,
+                R.id.key_backspace, R.id.key_backspace_eng, R.id.key_backspace_num, R.id.key_backspace_sym,
+                R.id.key_del_eng, R.id.key_at_eng, R.id.key_period_eng, R.id.key_comma_eng,
+                R.id.key_0_kor, R.id.key_1_kor, R.id.key_2_kor, R.id.key_3_kor, R.id.key_4_kor,
+                R.id.key_5_kor, R.id.key_6_kor, R.id.key_7_kor, R.id.key_8_kor, R.id.key_9_kor,
+                R.id.key_0_eng_num, R.id.key_1_eng_num, R.id.key_2_eng_num, R.id.key_3_eng_num, R.id.key_4_eng_num,
+                R.id.key_5_eng_num, R.id.key_6_eng_num, R.id.key_7_eng_num, R.id.key_8_eng_num, R.id.key_9_eng_num -> {
+                    functionalKeyColor
                 }
-                else -> {
-                    // 버튼 ID로 배경색 결정
-                    when (view.id) {
-                        R.id.key_mode_kor, R.id.key_mode_num, R.id.key_mode_eng, R.id.key_mode_sym,
-                        R.id.key_shift, R.id.key_shift_eng, R.id.key_hangul_num,
-                        R.id.key_space, R.id.key_space_eng, R.id.key_space_num, R.id.key_space_sym,
-                        R.id.key_enter, R.id.key_enter_eng, R.id.key_search_num, R.id.key_enter_sym,
-                        R.id.key_backspace, R.id.key_backspace_eng, R.id.key_backspace_num, R.id.key_backspace_sym,
-                        R.id.key_del_eng, R.id.key_at_eng, R.id.key_period_eng, R.id.key_comma_eng,
-                        R.id.key_0_kor, R.id.key_1_kor, R.id.key_2_kor, R.id.key_3_kor, R.id.key_4_kor,
-                        R.id.key_5_kor, R.id.key_6_kor, R.id.key_7_kor, R.id.key_8_kor, R.id.key_9_kor,
-                        R.id.key_0_eng_num, R.id.key_1_eng_num, R.id.key_2_eng_num, R.id.key_3_eng_num, R.id.key_4_eng_num,
-                        R.id.key_5_eng_num, R.id.key_6_eng_num, R.id.key_7_eng_num, R.id.key_8_eng_num, R.id.key_9_eng_num -> {
-                            resources.getColor(R.color.key_functional_background, null)
-                        }
-                        else -> resources.getColor(R.color.key_background_normal, null)
-                    }
-                }
+                else -> keyBackgroundColor
             }
             
             // 새로운 GradientDrawable 생성
@@ -164,7 +161,15 @@ class NeoFKeyboardService : InputMethodService() {
             drawable.cornerRadius = radiusPx.toFloat()
             view.background = drawable
             
-            Log.d(TAG, "Applied corner radius $radiusDp dp to button: ${view.text}")
+            // 버튼 상태 복원
+            view.isClickable = wasClickable
+            view.isEnabled = wasEnabled
+            view.isFocusable = wasFocusable
+            
+            // 배경이 변경되었으므로 저장된 원래 배경 업데이트
+            buttonOriginalBackgrounds[view] = drawable.constantState?.newDrawable()?.mutate()
+            
+            Log.d(TAG, "Applied corner radius $radiusDp dp to button: ${view.text}, clickable: $wasClickable")
         } else if (view is android.view.ViewGroup) {
             for (i in 0 until view.childCount) {
                 applyKeyCornerRadiusToButtons(view.getChildAt(i), radiusDp)
@@ -255,7 +260,7 @@ class NeoFKeyboardService : InputMethodService() {
         Log.d(TAG, "onStartInput called, restarting: $restarting")
         Log.d(TAG, "InputType: ${attribute?.inputType}")
         
-        // 설정 다시 로드
+        // 피드백 관련 설정만 다시 로드 (UI 변경 없음)
         isSoundEnabled = SettingsActivity.isSoundEnabled(this)
         isVibrationEnabled = SettingsActivity.isVibrationEnabled(this)
         isColorEffectEnabled = SettingsActivity.isColorEffectEnabled(this)
@@ -264,30 +269,24 @@ class NeoFKeyboardService : InputMethodService() {
         enterLongPressThreshold = SettingsActivity.getEnterLongPressThreshold(this)
         
         Log.d(TAG, "Settings reloaded in onStartInput")
-        
-        // 글자 크기 적용
-        keyboardView?.let { view ->
-            applyTextSize(view)
-        }
     }
     
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         Log.d(TAG, "onStartInputView called, restarting: $restarting")
         
-        // 키보드가 표시될 때마다 설정 적용
+        // 설정이 변경되어 재생성이 필요한지 확인
+        val prefs = getSharedPreferences("NeoFKeyboardPrefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("needs_recreate", false)) {
+            Log.d(TAG, "Settings changed, recreating keyboard view")
+            prefs.edit().putBoolean("needs_recreate", false).apply()
+            keyboardView = null
+            setInputView(onCreateInputView())
+            return
+        }
+        
+        // 숫자 행 표시/숨김만 업데이트 (다른 설정은 onCreateInputView에서만 적용)
         keyboardView?.let { view ->
-            val textSize = SettingsActivity.getTextSize(this)
-            Log.d(TAG, "Reapplying text size: $textSize sp")
-            applyTextSize(view)
-            
-            applyKeySpacing(view)
-            Log.d(TAG, "Key spacing reapplied")
-            
-            applyKeyCornerRadius(view)
-            Log.d(TAG, "Key corner radius reapplied")
-            
-            // 숫자 행 표시/숨김 업데이트
             updateNumberRowVisibility()
         } ?: Log.w(TAG, "keyboardView is null, cannot apply settings")
     }
@@ -893,12 +892,19 @@ class NeoFKeyboardService : InputMethodService() {
                 buttonOriginalBackgrounds[button] = button.background?.constantState?.newDrawable()?.mutate()
             }
             
-            // 터치 색상 적용
-            button.setBackgroundColor(touchColor)
+            val originalBg = buttonOriginalBackgrounds[button]
+            
+            // 터치 색상 적용 - GradientDrawable을 복사하여 색상만 변경
+            if (originalBg is android.graphics.drawable.GradientDrawable) {
+                val touchDrawable = originalBg.constantState?.newDrawable()?.mutate() as? android.graphics.drawable.GradientDrawable
+                touchDrawable?.setColor(touchColor)
+                button.background = touchDrawable
+            } else {
+                button.setBackgroundColor(touchColor)
+            }
             
             // 100ms 후 원래 배경으로 복원
             button.postDelayed({
-                val originalBg = buttonOriginalBackgrounds[button]
                 if (originalBg != null) {
                     button.background = originalBg.constantState?.newDrawable()?.mutate()
                 }

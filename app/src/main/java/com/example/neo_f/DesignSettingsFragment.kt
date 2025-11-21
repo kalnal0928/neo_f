@@ -18,6 +18,13 @@ class DesignSettingsFragment : Fragment() {
     private lateinit var keyCornerRadiusSeekBar: SeekBar
     private lateinit var keyCornerRadiusValueText: TextView
     private lateinit var numberRowSwitch: SwitchCompat
+    
+    private lateinit var textColorPreview: View
+    private lateinit var textColorButton: android.widget.Button
+    private lateinit var keyBackgroundColorPreview: View
+    private lateinit var keyBackgroundColorButton: android.widget.Button
+    private lateinit var functionalKeyColorPreview: View
+    private lateinit var functionalKeyColorButton: android.widget.Button
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,17 +44,31 @@ class DesignSettingsFragment : Fragment() {
         keyCornerRadiusSeekBar = view.findViewById(R.id.key_corner_radius_seekbar)
         keyCornerRadiusValueText = view.findViewById(R.id.key_corner_radius_value)
         numberRowSwitch = view.findViewById(R.id.number_row_switch)
+        
+        textColorPreview = view.findViewById(R.id.text_color_preview)
+        textColorButton = view.findViewById(R.id.text_color_button)
+        keyBackgroundColorPreview = view.findViewById(R.id.key_background_color_preview)
+        keyBackgroundColorButton = view.findViewById(R.id.key_background_color_button)
+        functionalKeyColorPreview = view.findViewById(R.id.functional_key_color_preview)
+        functionalKeyColorButton = view.findViewById(R.id.functional_key_color_button)
 
         // 현재 설정 불러오기
         val currentTextSize = SettingsActivity.getTextSize(requireContext())
         val currentKeySpacing = SettingsActivity.getKeySpacing(requireContext())
         val currentKeyCornerRadius = SettingsActivity.getKeyCornerRadius(requireContext())
         val currentShowNumberRow = SettingsActivity.isShowNumberRow(requireContext())
+        val currentTextColor = SettingsActivity.getTextColor(requireContext())
+        val currentKeyBackgroundColor = SettingsActivity.getKeyBackgroundColor(requireContext())
+        val currentFunctionalKeyColor = SettingsActivity.getFunctionalKeyColor(requireContext())
 
         updateTextSizeSeekBar(currentTextSize)
         updateKeySpacingSeekBar(currentKeySpacing)
         updateKeyCornerRadiusSeekBar(currentKeyCornerRadius)
         numberRowSwitch.isChecked = currentShowNumberRow
+        
+        textColorPreview.setBackgroundColor(currentTextColor)
+        keyBackgroundColorPreview.setBackgroundColor(currentKeyBackgroundColor)
+        functionalKeyColorPreview.setBackgroundColor(currentFunctionalKeyColor)
 
         // 글자 크기 SeekBar 리스너
         textSizeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -93,6 +114,57 @@ class DesignSettingsFragment : Fragment() {
         numberRowSwitch.setOnCheckedChangeListener { _, isChecked ->
             SettingsActivity.setShowNumberRow(requireContext(), isChecked)
         }
+        
+        // 색상 선택 버튼 리스너
+        textColorButton.setOnClickListener {
+            showColorPickerDialog(currentTextColor) { color ->
+                SettingsActivity.setTextColor(requireContext(), color)
+                textColorPreview.setBackgroundColor(color)
+            }
+        }
+        
+        keyBackgroundColorButton.setOnClickListener {
+            showColorPickerDialog(currentKeyBackgroundColor) { color ->
+                SettingsActivity.setKeyBackgroundColor(requireContext(), color)
+                keyBackgroundColorPreview.setBackgroundColor(color)
+            }
+        }
+        
+        functionalKeyColorButton.setOnClickListener {
+            showColorPickerDialog(currentFunctionalKeyColor) { color ->
+                SettingsActivity.setFunctionalKeyColor(requireContext(), color)
+                functionalKeyColorPreview.setBackgroundColor(color)
+            }
+        }
+    }
+    
+    private fun showColorPickerDialog(currentColor: Int, onColorSelected: (Int) -> Unit) {
+        val builder = android.app.AlertDialog.Builder(requireContext())
+        builder.setTitle("색상 선택")
+        
+        // ColorPickerView 생성 - 크기 지정
+        val colorPickerView = com.skydoves.colorpickerview.ColorPickerView.Builder(requireContext())
+            .setInitialColor(currentColor)
+            .build()
+        
+        // 크기 설정
+        val size = (300 * resources.displayMetrics.density).toInt()
+        val params = android.widget.LinearLayout.LayoutParams(size, size)
+        colorPickerView.layoutParams = params
+        
+        val layout = android.widget.LinearLayout(requireContext())
+        layout.orientation = android.widget.LinearLayout.VERTICAL
+        layout.setPadding(32, 32, 32, 32)
+        layout.gravity = android.view.Gravity.CENTER
+        layout.addView(colorPickerView)
+        
+        builder.setView(layout)
+        builder.setPositiveButton("확인") { _, _ ->
+            val selectedColor = colorPickerView.color
+            onColorSelected(selectedColor)
+        }
+        builder.setNegativeButton("취소", null)
+        builder.show()
     }
 
     private fun updateTextSizeSeekBar(textSize: Float) {

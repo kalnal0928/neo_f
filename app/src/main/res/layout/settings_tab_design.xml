@@ -256,6 +256,126 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="16dp"/>
 
+        <!-- 색상 설정 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="색상 설정"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키보드의 색상을 커스터마이즈합니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <!-- 문자 색상 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="문자 색상"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <View
+                android:id="@+id/text_color_preview"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="#FFFFFF"/>
+
+            <Button
+                android:id="@+id/text_color_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="변경"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- 일반 키 배경 색상 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="일반 키 배경"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <View
+                android:id="@+id/key_background_color_preview"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="#424242"/>
+
+            <Button
+                android:id="@+id/key_background_color_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="변경"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- 기능 키 배경 색상 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="기능 키 배경"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <View
+                android:id="@+id/functional_key_color_preview"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="#616161"/>
+
+            <Button
+                android:id="@+id/functional_key_color_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="변경"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"/>
+
         <!-- 키보드 레이아웃 -->
         <TextView
             android:layout_width="match_parent"
