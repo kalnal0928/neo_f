@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 글자 크기 설정 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="글자 크기"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키보드 버튼의 글자 크기를 조절합니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="현재 크기:"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/text_size_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="18 sp"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/text_size_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="20"
+            android:progress="8"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="작게 (12sp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="크게 (32sp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 자판 간격 설정 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="자판 간격"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키보드 버튼 사이의 간격을 조절합니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="현재 간격:"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/key_spacing_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2 dp"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/key_spacing_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="8"
+            android:progress="2"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="좁게 (0dp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="넓게 (8dp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 키 모서리 라운드 설정 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키 모서리 라운드"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키보드 버튼의 모서리 둥글기를 조절합니다. 최대값에서 타원형이 됩니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="현재 라운드:"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/key_corner_radius_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4 dp"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/key_corner_radius_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="24"
+            android:progress="4"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="각진 (0dp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="타원형 (24dp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 키보드 레이아웃 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키보드 레이아웃"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="숫자 행 표시"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/number_row_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="한글/영어 키보드 상단에 숫자 행(0-9)을 표시합니다."
+            android:textSize="12sp"
+            android:textColor="#999999"
+            android:paddingBottom="24dp"
+            android:paddingStart="4dp"/>
+
+    </LinearLayout>
+</ScrollView>

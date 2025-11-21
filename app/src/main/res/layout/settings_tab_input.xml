@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 음절 조합 타이머 섹션 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="음절 조합 타이머"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="같은 음절로 인식할 최대 시간 간격을 설정합니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="현재 설정:"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/timer_value_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="300 ms"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/timer_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="900"
+            android:progress="200"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="빠름 (100ms)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="느림 (1000ms)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+        </LinearLayout>
+
+        <!-- 프리셋 버튼들 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="빠른 설정"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="16dp">
+
+            <Button
+                android:id="@+id/preset_fast"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="빠름\n150ms"
+                android:textSize="12sp"/>
+
+            <Button
+                android:id="@+id/preset_normal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:text="보통\n300ms"
+                android:textSize="12sp"/>
+
+            <Button
+                android:id="@+id/preset_slow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="느림\n500ms"
+                android:textSize="12sp"/>
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 엔터키 설정 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="엔터키 설정"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="짧게 누르면 줄바꿈, 길게 누르면 보내기/검색 등의 액션을 실행합니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="길게 누르기 시간:"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/enter_threshold_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="500 ms"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/enter_threshold_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="800"
+            android:progress="300"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="빠름 (200ms)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="느림 (1000ms)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

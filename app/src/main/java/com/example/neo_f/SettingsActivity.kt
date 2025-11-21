@@ -37,6 +37,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_ENTER_LONG_PRESS_THRESHOLD = "enter_long_press_threshold"
         private const val KEY_SHOW_NUMBER_ROW = "show_number_row"
         private const val KEY_KEY_SPACING = "key_spacing"
+        private const val KEY_KEY_CORNER_RADIUS = "key_corner_radius"
         
         private const val DEFAULT_TIMEOUT = 300L
         private const val DEFAULT_SOUND_ENABLED = true
@@ -48,6 +49,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val DEFAULT_ENTER_LONG_PRESS_THRESHOLD = 500L
         private const val DEFAULT_SHOW_NUMBER_ROW = false
         private const val DEFAULT_KEY_SPACING = 2
+        private const val DEFAULT_KEY_CORNER_RADIUS = 4
 
         fun getSyllableTimeout(context: Context): Long {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -148,6 +150,16 @@ class SettingsActivity : AppCompatActivity() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putInt(KEY_KEY_SPACING, spacing).apply()
         }
+
+        fun getKeyCornerRadius(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_KEY_CORNER_RADIUS, DEFAULT_KEY_CORNER_RADIUS)
+        }
+
+        fun setKeyCornerRadius(context: Context, radius: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_KEY_CORNER_RADIUS, radius).apply()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -205,6 +217,7 @@ class SettingsActivity : AppCompatActivity() {
         setEnterLongPressThreshold(this, DEFAULT_ENTER_LONG_PRESS_THRESHOLD)
         setShowNumberRow(this, DEFAULT_SHOW_NUMBER_ROW)
         setKeySpacing(this, DEFAULT_KEY_SPACING)
+        setKeyCornerRadius(this, DEFAULT_KEY_CORNER_RADIUS)
         
         // 프래그먼트 새로고침
         recreate()

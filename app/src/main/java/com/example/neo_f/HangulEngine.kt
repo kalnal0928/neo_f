@@ -158,19 +158,6 @@ class HangulEngine(
                 }
             }
         } else if (isVowel) {
-            // 같은 모음을 타이머 내에 두 번 눌렀을 때 ㅑ, ㅕ, ㅛ, ㅠ 변환
-            if (lastKey == key && timeSinceLastKey < syllableTimeoutMs && key in VOWEL_DOUBLE_TO_Y.keys) {
-                val yVowel = VOWEL_DOUBLE_TO_Y[key]!!
-                
-                if (currentState.jungseong == key && currentState.jongseong == null) {
-                    currentState.jungseong = yVowel
-                    lastKey = key
-                    lastKeyTime = currentTime
-                    listener(Result(composing = combineHangul()))
-                    return
-                }
-            }
-            
             if (currentState.jongseong != null) {
                 val split = JONGSEONG_SPLIT[currentState.jongseong]
                 val lastJongseong = currentState.jongseong
@@ -187,10 +174,27 @@ class HangulEngine(
                     currentState.jungseong = key
                 }
             } else if (currentState.choseong != null) {
-                 val newJungseong = JUNGSEONG_COMBINATIONS[currentState.jungseong to key]
-                 if (currentState.jungseong != null && newJungseong != null) {
-                    currentState.jungseong = newJungseong
+                // 중성이 이미 있는 경우
+                if (currentState.jungseong != null) {
+                    // 1. 같은 모음을 타이머 내에 두 번 눌렀을 때 ㅑ, ㅕ, ㅛ, ㅠ 변환
+                    if (currentState.jungseong == key && timeSinceLastKey < syllableTimeoutMs && key in VOWEL_DOUBLE_TO_Y.keys) {
+                        currentState.jungseong = VOWEL_DOUBLE_TO_Y[key]!!
+                        // return 하지 않고 계속 진행하여 listener 호출
+                    }
+                    // 2. 중성 조합 시도 (ㅗ+ㅏ=ㅘ 등)
+                    else {
+                        val newJungseong = JUNGSEONG_COMBINATIONS[currentState.jungseong to key]
+                        if (newJungseong != null) {
+                            currentState.jungseong = newJungseong
+                        } else {
+                            // 조합 불가능하면 현재 음절 완성하고 새 음절 시작
+                            committed = commitCurrentState()
+                            currentState.choseong = 'ㅇ'  // 초성 없는 모음은 ㅇ으로 시작
+                            currentState.jungseong = key
+                        }
+                    }
                 } else {
+                    // 중성이 없는 경우 - 첫 중성 설정
                     currentState.jungseong = key
                 }
             } else {

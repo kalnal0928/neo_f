@@ -23,6 +23,7 @@ class NeoFKeyboardService : InputMethodService() {
     private var koreanShiftKey: Button? = null
     private var englishShiftKey: Button? = null
     private var koreanKeyboardLayout: LinearLayout? = null
+    private var numberKeyboardLayout: LinearLayout? = null
     private var englishKeyboardLayout: LinearLayout? = null
     private var symbolKeyboardLayout: LinearLayout? = null
     private var numberRowKorean: LinearLayout? = null
@@ -48,7 +49,7 @@ class NeoFKeyboardService : InputMethodService() {
             updateEnglishKeyboardCase()
         }
 
-    private enum class KeyboardMode { KOREAN, ENGLISH, SYMBOL }
+    private enum class KeyboardMode { KOREAN, NUMBER, ENGLISH, SYMBOL }
     private var currentKeyboardMode = KeyboardMode.KOREAN
     private var lastAlphabetMode = KeyboardMode.KOREAN
 
@@ -110,6 +111,67 @@ class NeoFKeyboardService : InputMethodService() {
         }
     }
     
+    private fun applyKeyCornerRadius(view: View) {
+        val cornerRadius = SettingsActivity.getKeyCornerRadius(this)
+        Log.d(TAG, "Applying key corner radius: $cornerRadius dp")
+        
+        // 모든 버튼에 라운드 적용
+        applyKeyCornerRadiusToButtons(view, cornerRadius)
+    }
+    
+    private fun applyKeyCornerRadiusToButtons(view: View, radiusDp: Int) {
+        if (view is Button) {
+            val radiusPx = (radiusDp * resources.displayMetrics.density).toInt()
+            
+            // 현재 배경색 가져오기
+            val currentBg = view.background
+            val backgroundColor = when {
+                currentBg is android.graphics.drawable.ColorDrawable -> currentBg.color
+                currentBg is android.graphics.drawable.GradientDrawable -> {
+                    // GradientDrawable인 경우 기본 색상 사용
+                    try {
+                        val colorField = android.graphics.drawable.GradientDrawable::class.java.getDeclaredField("mSolidColors")
+                        colorField.isAccessible = true
+                        val colors = colorField.get(currentBg) as? android.content.res.ColorStateList
+                        colors?.defaultColor ?: resources.getColor(R.color.key_background_normal, null)
+                    } catch (e: Exception) {
+                        resources.getColor(R.color.key_background_normal, null)
+                    }
+                }
+                else -> {
+                    // 버튼 ID로 배경색 결정
+                    when (view.id) {
+                        R.id.key_mode_kor, R.id.key_mode_num, R.id.key_mode_eng, R.id.key_mode_sym,
+                        R.id.key_shift, R.id.key_shift_eng, R.id.key_hangul_num,
+                        R.id.key_space, R.id.key_space_eng, R.id.key_space_num, R.id.key_space_sym,
+                        R.id.key_enter, R.id.key_enter_eng, R.id.key_search_num, R.id.key_enter_sym,
+                        R.id.key_backspace, R.id.key_backspace_eng, R.id.key_backspace_num, R.id.key_backspace_sym,
+                        R.id.key_del_eng, R.id.key_at_eng, R.id.key_period_eng, R.id.key_comma_eng,
+                        R.id.key_0_kor, R.id.key_1_kor, R.id.key_2_kor, R.id.key_3_kor, R.id.key_4_kor,
+                        R.id.key_5_kor, R.id.key_6_kor, R.id.key_7_kor, R.id.key_8_kor, R.id.key_9_kor,
+                        R.id.key_0_eng_num, R.id.key_1_eng_num, R.id.key_2_eng_num, R.id.key_3_eng_num, R.id.key_4_eng_num,
+                        R.id.key_5_eng_num, R.id.key_6_eng_num, R.id.key_7_eng_num, R.id.key_8_eng_num, R.id.key_9_eng_num -> {
+                            resources.getColor(R.color.key_functional_background, null)
+                        }
+                        else -> resources.getColor(R.color.key_background_normal, null)
+                    }
+                }
+            }
+            
+            // 새로운 GradientDrawable 생성
+            val drawable = android.graphics.drawable.GradientDrawable()
+            drawable.setColor(backgroundColor)
+            drawable.cornerRadius = radiusPx.toFloat()
+            view.background = drawable
+            
+            Log.d(TAG, "Applied corner radius $radiusDp dp to button: ${view.text}")
+        } else if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) {
+                applyKeyCornerRadiusToButtons(view.getChildAt(i), radiusDp)
+            }
+        }
+    }
+    
     override fun onEvaluateFullscreenMode(): Boolean {
         Log.d(TAG, "onEvaluateFullscreenMode called")
         return false // 전체화면 모드 비활성화
@@ -152,6 +214,9 @@ class NeoFKeyboardService : InputMethodService() {
             setupKoreanKeyboardListeners(view)
             Log.d(TAG, "Korean keyboard listeners setup complete")
             
+            setupNumberKeyboardListeners(view)
+            Log.d(TAG, "Number keyboard listeners setup complete")
+            
             setupEnglishKeyboardListeners(view)
             Log.d(TAG, "English keyboard listeners setup complete")
             
@@ -173,6 +238,9 @@ class NeoFKeyboardService : InputMethodService() {
             
             applyKeySpacing(view)
             Log.d(TAG, "Key spacing applied")
+            
+            applyKeyCornerRadius(view)
+            Log.d(TAG, "Key corner radius applied")
 
             view
         } catch (e: Exception) {
@@ -215,6 +283,9 @@ class NeoFKeyboardService : InputMethodService() {
             
             applyKeySpacing(view)
             Log.d(TAG, "Key spacing reapplied")
+            
+            applyKeyCornerRadius(view)
+            Log.d(TAG, "Key corner radius reapplied")
             
             // 숫자 행 표시/숨김 업데이트
             updateNumberRowVisibility()
@@ -261,6 +332,7 @@ class NeoFKeyboardService : InputMethodService() {
         koreanShiftKey = null
         englishShiftKey = null
         koreanKeyboardLayout = null
+        numberKeyboardLayout = null
         englishKeyboardLayout = null
         symbolKeyboardLayout = null
         numberRowKorean = null
@@ -280,6 +352,7 @@ class NeoFKeyboardService : InputMethodService() {
         koreanShiftKey = view.findViewById(R.id.key_shift)
         englishShiftKey = view.findViewById(R.id.key_shift_eng)
         koreanKeyboardLayout = view.findViewById(R.id.korean_keyboard)
+        numberKeyboardLayout = view.findViewById(R.id.number_keyboard)
         englishKeyboardLayout = view.findViewById(R.id.english_keyboard)
         symbolKeyboardLayout = view.findViewById(R.id.symbol_keyboard)
         numberRowKorean = view.findViewById(R.id.number_row_korean)
@@ -339,6 +412,56 @@ class NeoFKeyboardService : InputMethodService() {
                     isKoreanShifted = false
                 }
             }
+        }
+    }
+
+    private fun setupNumberKeyboardListeners(view: View) {
+        // 숫자 및 특수문자 키
+        val numberKeys = mapOf(
+            R.id.key_1_num to "1", R.id.key_2_num to "2", R.id.key_3_num to "3",
+            R.id.key_star_num to "*", R.id.key_plus_num to "+", R.id.key_slash_num to "/",
+            R.id.key_4_num to "4", R.id.key_5_num to "5", R.id.key_6_num to "6",
+            R.id.key_hash_num to "#", R.id.key_minus_num to "-", R.id.key_equal_num to "=",
+            R.id.key_7_num to "7", R.id.key_8_num to "8", R.id.key_9_num to "9",
+            R.id.key_0_num to "0", R.id.key_at_num to "@", R.id.key_period_num to "."
+        )
+
+        numberKeys.forEach { (id, text) ->
+            setupButtonWithFeedback(view.findViewById(id)) {
+                currentInputConnection?.commitText(text, 1)
+            }
+        }
+
+        // 스페이스 바
+        setupButtonWithFeedback(view.findViewById(R.id.key_space_num)) {
+            currentInputConnection?.commitText(" ", 1)
+        }
+
+        // 백스페이스 버튼
+        view.findViewById<Button?>(R.id.key_backspace_num)?.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    performSingleBackspace()
+                    backspaceRunnable = Runnable {
+                        performSingleBackspace()
+                        backspaceHandler.postDelayed(backspaceRunnable!!, REPEAT_DELAY)
+                    }.also {
+                        backspaceHandler.postDelayed(it, LONG_PRESS_THRESHOLD)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    backspaceRunnable?.let { backspaceHandler.removeCallbacks(it) }
+                    backspaceRunnable = null
+                    true
+                }
+                else -> false
+            }
+        }
+
+        // 검색 버튼 (돋보기)
+        setupButtonWithFeedback(view.findViewById(R.id.key_search_num)) {
+            sendEnterAction()
         }
     }
 
@@ -565,7 +688,23 @@ class NeoFKeyboardService : InputMethodService() {
         setupButtonWithFeedback(modeKorButton) {
             Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
             val nextMode = when (currentKeyboardMode) {
-                KeyboardMode.KOREAN -> KeyboardMode.ENGLISH
+                KeyboardMode.KOREAN -> KeyboardMode.NUMBER
+                KeyboardMode.NUMBER -> KeyboardMode.ENGLISH
+                KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
+                KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
+            }
+            Log.d(TAG, "Switching to: $nextMode")
+            setKeyboardMode(nextMode)
+        }
+
+        // 숫자 키보드의 자판 전환 버튼
+        val modeNumButton = view.findViewById<Button>(R.id.key_mode_num)
+        Log.d(TAG, "key_mode_num button: $modeNumButton")
+        setupButtonWithFeedback(modeNumButton) {
+            Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
+            val nextMode = when (currentKeyboardMode) {
+                KeyboardMode.KOREAN -> KeyboardMode.NUMBER
+                KeyboardMode.NUMBER -> KeyboardMode.ENGLISH
                 KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
                 KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
             }
@@ -579,7 +718,8 @@ class NeoFKeyboardService : InputMethodService() {
         setupButtonWithFeedback(modeEngButton) {
             Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
             val nextMode = when (currentKeyboardMode) {
-                KeyboardMode.KOREAN -> KeyboardMode.ENGLISH
+                KeyboardMode.KOREAN -> KeyboardMode.NUMBER
+                KeyboardMode.NUMBER -> KeyboardMode.ENGLISH
                 KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
                 KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
             }
@@ -593,12 +733,21 @@ class NeoFKeyboardService : InputMethodService() {
         setupButtonWithFeedback(modeSymButton) {
             Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
             val nextMode = when (currentKeyboardMode) {
-                KeyboardMode.KOREAN -> KeyboardMode.ENGLISH
+                KeyboardMode.KOREAN -> KeyboardMode.NUMBER
+                KeyboardMode.NUMBER -> KeyboardMode.ENGLISH
                 KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
                 KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
             }
             Log.d(TAG, "Switching to: $nextMode")
             setKeyboardMode(nextMode)
+        }
+
+        // 숫자 키보드의 한글 전환 버튼
+        val hangulNumButton = view.findViewById<Button>(R.id.key_hangul_num)
+        Log.d(TAG, "key_hangul_num button: $hangulNumButton")
+        setupButtonWithFeedback(hangulNumButton) {
+            Log.d(TAG, "Hangul button clicked, switching to KOREAN")
+            setKeyboardMode(KeyboardMode.KOREAN)
         }
 
         // 한글 키보드의 ㄲ 버튼 (된소리 변환)
@@ -639,13 +788,16 @@ class NeoFKeyboardService : InputMethodService() {
     }
 
     private fun sendNewLine() {
+        Log.d(TAG, "sendNewLine called")
         val ic = currentInputConnection ?: return
         hangulEngine?.reset()
         composingText = ""
+        Log.d(TAG, "Committing newline character")
         ic.commitText("\n", 1)
     }
     
     private fun sendEnterAction() {
+        Log.d(TAG, "sendEnterAction called")
         val ic = currentInputConnection ?: return
         hangulEngine?.reset()
         composingText = ""
@@ -653,32 +805,52 @@ class NeoFKeyboardService : InputMethodService() {
         val editorInfo = currentInputEditorInfo
         if (editorInfo != null && (editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) == 0) {
             when (editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION) {
-                EditorInfo.IME_ACTION_SEARCH -> ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
-                EditorInfo.IME_ACTION_SEND -> ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
-                EditorInfo.IME_ACTION_GO -> ic.performEditorAction(EditorInfo.IME_ACTION_GO)
-                EditorInfo.IME_ACTION_NEXT -> ic.performEditorAction(EditorInfo.IME_ACTION_NEXT)
-                EditorInfo.IME_ACTION_DONE -> ic.performEditorAction(EditorInfo.IME_ACTION_DONE)
-                else -> ic.commitText("\n", 1)
+                EditorInfo.IME_ACTION_SEARCH -> {
+                    Log.d(TAG, "Performing SEARCH action")
+                    ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+                }
+                EditorInfo.IME_ACTION_SEND -> {
+                    Log.d(TAG, "Performing SEND action")
+                    ic.performEditorAction(EditorInfo.IME_ACTION_SEND)
+                }
+                EditorInfo.IME_ACTION_GO -> {
+                    Log.d(TAG, "Performing GO action")
+                    ic.performEditorAction(EditorInfo.IME_ACTION_GO)
+                }
+                EditorInfo.IME_ACTION_NEXT -> {
+                    Log.d(TAG, "Performing NEXT action")
+                    ic.performEditorAction(EditorInfo.IME_ACTION_NEXT)
+                }
+                EditorInfo.IME_ACTION_DONE -> {
+                    Log.d(TAG, "Performing DONE action")
+                    ic.performEditorAction(EditorInfo.IME_ACTION_DONE)
+                }
+                else -> {
+                    Log.d(TAG, "No specific action, committing newline")
+                    ic.commitText("\n", 1)
+                }
             }
         } else {
+            Log.d(TAG, "No editor action, committing newline")
             ic.commitText("\n", 1)
         }
     }
 
     private fun setKeyboardMode(mode: KeyboardMode) {
         Log.d(TAG, "setKeyboardMode called: $mode")
-        if (mode != KeyboardMode.SYMBOL) {
+        if (mode != KeyboardMode.SYMBOL && mode != KeyboardMode.NUMBER) {
             lastAlphabetMode = mode
         }
         currentKeyboardMode = mode
 
-        Log.d(TAG, "Korean layout: $koreanKeyboardLayout, English: $englishKeyboardLayout, Symbol: $symbolKeyboardLayout")
+        Log.d(TAG, "Korean layout: $koreanKeyboardLayout, Number: $numberKeyboardLayout, English: $englishKeyboardLayout, Symbol: $symbolKeyboardLayout")
         
         koreanKeyboardLayout?.visibility = if (mode == KeyboardMode.KOREAN) View.VISIBLE else View.GONE
+        numberKeyboardLayout?.visibility = if (mode == KeyboardMode.NUMBER) View.VISIBLE else View.GONE
         englishKeyboardLayout?.visibility = if (mode == KeyboardMode.ENGLISH) View.VISIBLE else View.GONE
         symbolKeyboardLayout?.visibility = if (mode == KeyboardMode.SYMBOL) View.VISIBLE else View.GONE
 
-        Log.d(TAG, "Visibility set - Korean: ${koreanKeyboardLayout?.visibility}, English: ${englishKeyboardLayout?.visibility}, Symbol: ${symbolKeyboardLayout?.visibility}")
+        Log.d(TAG, "Visibility set - Korean: ${koreanKeyboardLayout?.visibility}, Number: ${numberKeyboardLayout?.visibility}, English: ${englishKeyboardLayout?.visibility}, Symbol: ${symbolKeyboardLayout?.visibility}")
 
         hangulEngine?.reset()
         composingText = ""

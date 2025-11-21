@@ -86,6 +86,67 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- 숫자 키보드 -->
+    <LinearLayout
+        android:id="@+id/number_keyboard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- 1번째 줄 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/key_1_num" android:text="1" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_2_num" android:text="2" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_3_num" android:text="3" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_star_num" android:text="*" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_plus_num" android:text="+" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_slash_num" android:text="/" style="@style/KeyboardKey"/>
+        </LinearLayout>
+
+        <!-- 2번째 줄 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/key_4_num" android:text="4" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_5_num" android:text="5" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_6_num" android:text="6" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_hash_num" android:text="#" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_minus_num" android:text="-" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_equal_num" android:text="=" style="@style/KeyboardKey"/>
+        </LinearLayout>
+
+        <!-- 3번째 줄 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/key_7_num" android:text="7" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_8_num" android:text="8" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_9_num" android:text="9" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_0_num" android:text="0" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_at_num" android:text="\@" style="@style/KeyboardKey"/>
+            <Button android:id="@+id/key_period_num" android:text="." style="@style/KeyboardKey"/>
+        </LinearLayout>
+
+        <!-- 4번째 줄 (기능키) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/key_mode_num" android:text="🔄" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
+            <Button android:id="@+id/key_hangul_num" android:text="한글" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
+            <Button android:id="@+id/key_space_num" android:text=" " style="@style/KeyboardKey.Functional" android:layout_weight="3"/>
+            <Button android:id="@+id/key_search_num" android:text="🔍" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
+            <Button android:id="@+id/key_backspace_num" android:text="DEL" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
+        </LinearLayout>
+    </LinearLayout>
+
     <!-- 영문 키보드 -->
     <LinearLayout
         android:id="@+id/english_keyboard"

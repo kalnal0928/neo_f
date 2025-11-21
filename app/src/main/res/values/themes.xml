@@ -14,7 +14,7 @@
         <item name="android:layout_height">48dp</item>
         <item name="android:layout_weight">1</item>
         <item name="android:layout_margin">2dp</item>
-        <item name="android:background">@color/key_background_normal</item>
+        <item name="android:background">@drawable/key_background_normal</item>
         <item name="android:textColor">@color/key_text_color</item>
         <item name="android:textSize">18sp</item>
         <item name="android:gravity">center</item>
@@ -23,7 +23,7 @@
 
     <!-- 기능 키 스타일 (Space, Enter 등) -->
     <style name="KeyboardKey.Functional" parent="KeyboardKey">
-        <item name="android:background">@color/key_functional_background</item>
+        <item name="android:background">@drawable/key_background_functional</item>
         <item name="android:textSize">16sp</item>
     </style>
 
@@ -31,7 +31,7 @@
     <style name="KeyboardKey.Number" parent="KeyboardKey">
         <item name="android:layout_height">40dp</item>
         <item name="android:textSize">14sp</item>
-        <item name="android:background">@color/key_functional_background</item>
+        <item name="android:background">@drawable/key_background_functional</item>
     </style>
 
 </resources>
