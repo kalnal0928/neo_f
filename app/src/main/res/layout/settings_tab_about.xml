@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center_horizontal">
+
+        <!-- 앱 아이콘 -->
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="24dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="앱 아이콘"/>
+
+        <!-- 앱 이름 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Neo-F 키보드"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingBottom="8dp"/>
+
+        <!-- 버전 정보 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="버전 v1.0"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:paddingBottom="32dp"/>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- 제작자 정보 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="제작자"
+            android:textSize="14sp"
+            android:textColor="#999999"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="뽐뿌_퓨터"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingBottom="32dp"/>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- 설명 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Neo-F 키보드는 한글 입력을 위한 혁신적인 키보드입니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:paddingBottom="16dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• 빠른 한글 조합\n• 커스터마이즈 가능한 디자인\n• 직관적인 레이아웃"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:paddingBottom="32dp"/>
+
+        <!-- 저작권 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="© 2024 뽐뿌_퓨터"
+            android:textSize="12sp"
+            android:textColor="#999999"
+            android:paddingTop="16dp"/>
+
+    </LinearLayout>
+</ScrollView>
