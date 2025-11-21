@@ -83,6 +83,7 @@ class HangulEngine(
     private var currentState = State()
     private var lastKey: Char? = null
     private var lastKeyTime: Long = 0
+    private var pendingConsonant: Char? = null  // 겹받침 조합 실패 후 대기 중인 자음
 
     data class State(var choseong: Char? = null, var jungseong: Char? = null, var jongseong: Char? = null)
     data class Result(val committed: String = "", val composing: String = "")
@@ -112,8 +113,16 @@ class HangulEngine(
         
         // 스페이스 처리
         if (key == ' ') {
-            val committed = commitCurrentState()
-            listener(Result(committed + " ", ""))
+            // 대기 중인 자음이 있으면 먼저 처리
+            if (pendingConsonant != null) {
+                val committed = commitCurrentState()
+                currentState.choseong = pendingConsonant
+                pendingConsonant = null
+                listener(Result(committed + " ", ""))
+            } else {
+                val committed = commitCurrentState()
+                listener(Result(committed + " ", ""))
+            }
             lastKey = key
             lastKeyTime = currentTime
             return
@@ -123,6 +132,36 @@ class HangulEngine(
         val isVowel = key in JUNGSEONG_LIST
         val timeSinceLastKey = currentTime - lastKeyTime
         var committed = ""
+        
+        // 대기 중인 자음이 있는 경우 처리
+        if (pendingConsonant != null) {
+            // 같은 키를 타이머 내에 눌렀는지 확인
+            if (isCharacterCycleEnabled && lastKey == key && timeSinceLastKey < syllableTimeoutMs && isConsonant) {
+                val cycle = CONSONANT_CYCLE[key]
+                if (cycle != null && cycle.size > 1) {
+                    // 순환의 다음 문자로 변경
+                    val nextIndex = 1 % cycle.size
+                    val keyToUse = cycle[nextIndex]
+                    
+                    // 겹받침 조합 재시도
+                    val newJongseong = JONGSEONG_COMBINATIONS[currentState.jongseong to keyToUse]
+                    if (newJongseong != null) {
+                        // 겹받침 조합 성공!
+                        currentState.jongseong = newJongseong
+                        pendingConsonant = null
+                        lastKey = key
+                        lastKeyTime = currentTime
+                        listener(Result(composing = combineHangul()))
+                        return
+                    }
+                }
+            }
+            
+            // 타이머 초과 또는 다른 키 입력 - 대기 중인 자음으로 새 음절 시작
+            committed = commitCurrentState()
+            currentState.choseong = pendingConsonant
+            pendingConsonant = null
+        }
 
         // 같은 키를 타이머 내에 반복해서 누를 때 순환 처리 (설정이 활성화된 경우에만)
         if (isCharacterCycleEnabled && lastKey == key && timeSinceLastKey < syllableTimeoutMs) {
@@ -181,15 +220,20 @@ class HangulEngine(
                         currentState.choseong = key
                     }
                 } else {
-                    // 종성이 이미 있으면 겹받침 조합 시도
+                    // 종성이 이미 있는 경우
+                    // 겹받침 조합 시도
                     val newJongseong = JONGSEONG_COMBINATIONS[currentState.jongseong to key]
                     if (newJongseong != null) {
                         // 겹받침 조합 성공
                         currentState.jongseong = newJongseong
                     } else {
-                        // 겹받침 조합 불가 - 현재 음절 완성하고 새 초성 시작
-                        committed = commitCurrentState()
-                        currentState.choseong = key
+                        // 겹받침 조합 실패 - 대기 상태로 전환
+                        // 다음 입력이 같은 키면 순환 처리, 아니면 새 음절 시작
+                        pendingConsonant = key
+                        lastKey = key
+                        lastKeyTime = currentTime
+                        listener(Result(committed, combineHangul()))
+                        return
                     }
                 }
             } else {
@@ -291,6 +335,7 @@ class HangulEngine(
         currentState = State()
         lastKey = null
         lastKeyTime = 0
+        pendingConsonant = null
     }
 
     private fun combineHangul(): String {

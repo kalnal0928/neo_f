@@ -238,6 +238,20 @@ class NeoFKeyboardService : InputMethodService() {
             setupViewReferences(view)
             Log.d(TAG, "View references setup complete")
             
+            // UI 스타일 먼저 적용 (리스너 설정 전에)
+            applyTextSize(view)
+            Log.d(TAG, "Text size applied")
+            
+            applyKeySpacing(view)
+            Log.d(TAG, "Key spacing applied")
+            
+            applyKeyCornerRadius(view)
+            Log.d(TAG, "Key corner radius applied")
+            
+            applyKeyHeight(view)
+            Log.d(TAG, "Key height applied")
+            
+            // 리스너 설정 (UI 스타일 적용 후에)
             setupKoreanKeyboardListeners(view)
             Log.d(TAG, "Korean keyboard listeners setup complete")
             
@@ -259,18 +273,6 @@ class NeoFKeyboardService : InputMethodService() {
 
             setKeyboardMode(KeyboardMode.KOREAN)
             Log.d(TAG, "Keyboard mode set to KOREAN")
-            
-            applyTextSize(view)
-            Log.d(TAG, "Text size applied")
-            
-            applyKeySpacing(view)
-            Log.d(TAG, "Key spacing applied")
-            
-            applyKeyCornerRadius(view)
-            Log.d(TAG, "Key corner radius applied")
-            
-            applyKeyHeight(view)
-            Log.d(TAG, "Key height applied")
 
             view
         } catch (e: Exception) {
@@ -309,8 +311,18 @@ class NeoFKeyboardService : InputMethodService() {
         if (prefs.getBoolean("needs_recreate", false)) {
             Log.d(TAG, "Settings changed, recreating keyboard view")
             prefs.edit().putBoolean("needs_recreate", false).apply()
-            keyboardView = null
-            setInputView(onCreateInputView())
+            
+            // 상태 초기화
+            cleanupResources()
+            
+            // 새로운 뷰 생성 및 설정
+            val newView = onCreateInputView()
+            setInputView(newView)
+            
+            // 키보드 뷰 참조 업데이트
+            keyboardView = newView
+            
+            Log.d(TAG, "Keyboard view recreated successfully")
             return
         }
         
@@ -328,13 +340,24 @@ class NeoFKeyboardService : InputMethodService() {
     override fun onUnbindInput() {
         super.onUnbindInput()
         Log.d(TAG, "onUnbindInput called")
-        cleanupResources()
+        // 핸들러만 정리하고 뷰는 유지
+        backspaceRunnable?.let { 
+            backspaceHandler.removeCallbacks(it)
+            backspaceRunnable = null
+        }
+        enterLongPressRunnable?.let {
+            enterHandler.removeCallbacks(it)
+            enterLongPressRunnable = null
+        }
+        hangulEngine?.reset()
+        composingText = ""
     }
     
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy called")
         cleanupResources()
+        keyboardView = null
     }
     
     private fun cleanupResources() {
@@ -352,8 +375,9 @@ class NeoFKeyboardService : InputMethodService() {
             enterLongPressRunnable = null
         }
         
-        // HangulEngine 리셋
+        // HangulEngine 완전히 제거
         hangulEngine?.reset()
+        hangulEngine = null
         composingText = ""
         
         // 버튼 참조 정리
@@ -367,7 +391,6 @@ class NeoFKeyboardService : InputMethodService() {
         numberRowEnglish = null
         englishKeyButtons.clear()
         buttonOriginalBackgrounds.clear()
-        keyboardView = null
         
         // 상태 초기화
         isKoreanShifted = false

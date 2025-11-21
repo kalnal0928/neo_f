@@ -74,26 +74,34 @@ class FeedbackSettingsFragment : Fragment() {
     }
 
     private fun showColorPickerDialog() {
-        val colors = arrayOf(
-            0xFF4CAF50.toInt(), // 초록
-            0xFF2196F3.toInt(), // 파랑
-            0xFFF44336.toInt(), // 빨강
-            0xFFFF9800.toInt(), // 주황
-            0xFF9C27B0.toInt(), // 보라
-            0xFFFFEB3B.toInt(), // 노랑
-            0xFF00BCD4.toInt(), // 청록
-            0xFFE91E63.toInt()  // 핑크
-        )
-        
-        val colorNames = arrayOf("초록", "파랑", "빨강", "주황", "보라", "노랑", "청록", "핑크")
+        val currentColor = SettingsActivity.getTouchColor(requireContext())
         
         val builder = android.app.AlertDialog.Builder(requireContext())
         builder.setTitle("터치 색상 선택")
-        builder.setItems(colorNames) { _, which ->
-            val selectedColor = colors[which]
+        
+        // ColorPickerView 생성
+        val colorPickerView = com.skydoves.colorpickerview.ColorPickerView.Builder(requireContext())
+            .setInitialColor(currentColor)
+            .build()
+        
+        // 크기 설정
+        val size = (300 * resources.displayMetrics.density).toInt()
+        val params = android.widget.LinearLayout.LayoutParams(size, size)
+        colorPickerView.layoutParams = params
+        
+        val layout = android.widget.LinearLayout(requireContext())
+        layout.orientation = android.widget.LinearLayout.VERTICAL
+        layout.setPadding(32, 32, 32, 32)
+        layout.gravity = android.view.Gravity.CENTER
+        layout.addView(colorPickerView)
+        
+        builder.setView(layout)
+        builder.setPositiveButton("확인") { _, _ ->
+            val selectedColor = colorPickerView.color
             SettingsActivity.setTouchColor(requireContext(), selectedColor)
             updateColorPreview(selectedColor)
         }
+        builder.setNegativeButton("취소", null)
         builder.show()
     }
 }

@@ -27,8 +27,6 @@ class DesignSettingsFragment : Fragment() {
     private lateinit var keyBackgroundColorButton: android.widget.Button
     private lateinit var functionalKeyColorPreview: View
     private lateinit var functionalKeyColorButton: android.widget.Button
-    private lateinit var touchColorPreview: View
-    private lateinit var touchColorButton: android.widget.Button
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,8 +55,6 @@ class DesignSettingsFragment : Fragment() {
         keyBackgroundColorButton = view.findViewById(R.id.key_background_color_button)
         functionalKeyColorPreview = view.findViewById(R.id.functional_key_color_preview)
         functionalKeyColorButton = view.findViewById(R.id.functional_key_color_button)
-        touchColorPreview = view.findViewById(R.id.touch_color_preview)
-        touchColorButton = view.findViewById(R.id.touch_color_button)
 
         // 현재 설정 불러오기
         val currentTextSize = SettingsActivity.getTextSize(requireContext())
@@ -69,7 +65,6 @@ class DesignSettingsFragment : Fragment() {
         val currentTextColor = SettingsActivity.getTextColor(requireContext())
         val currentKeyBackgroundColor = SettingsActivity.getKeyBackgroundColor(requireContext())
         val currentFunctionalKeyColor = SettingsActivity.getFunctionalKeyColor(requireContext())
-        val currentTouchColor = SettingsActivity.getTouchColor(requireContext())
 
         updateTextSizeSeekBar(currentTextSize)
         updateKeySpacingSeekBar(currentKeySpacing)
@@ -80,7 +75,6 @@ class DesignSettingsFragment : Fragment() {
         textColorPreview.setBackgroundColor(currentTextColor)
         keyBackgroundColorPreview.setBackgroundColor(currentKeyBackgroundColor)
         functionalKeyColorPreview.setBackgroundColor(currentFunctionalKeyColor)
-        touchColorPreview.setBackgroundColor(currentTouchColor)
 
         // 글자 크기 SeekBar 리스너
         textSizeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -160,13 +154,6 @@ class DesignSettingsFragment : Fragment() {
             showColorPickerDialog(currentFunctionalKeyColor) { color ->
                 SettingsActivity.setFunctionalKeyColor(requireContext(), color)
                 functionalKeyColorPreview.setBackgroundColor(color)
-            }
-        }
-        
-        touchColorButton.setOnClickListener {
-            showColorPickerDialog(currentTouchColor) { color ->
-                SettingsActivity.setTouchColor(requireContext(), color)
-                touchColorPreview.setBackgroundColor(color)
             }
         }
     }
