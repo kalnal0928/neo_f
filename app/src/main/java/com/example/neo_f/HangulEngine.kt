@@ -2,8 +2,8 @@ package com.example.neo_f
 
 class HangulEngine(
     private val listener: (Result) -> Unit,
-    var syllableTimeoutMs: Long = 300L,  // 음절 조합 타이머 (기본 300ms)
-    var isCharacterCycleEnabled: Boolean = true  // 문자 순환 기능 활성화 여부
+    var syllableTimeoutMs: Long = 300L,
+    var isCharacterCycleEnabled: Boolean = true
 ) {
 
     // 초성, 중성, 종성 리스트
@@ -11,7 +11,6 @@ class HangulEngine(
     private val JUNGSEONG_LIST = listOf('ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ')
     private val JONGSEONG_LIST = listOf(' ', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ')
 
-    // 조합 규칙
     private val JUNGSEONG_COMBINATIONS = mapOf(
         ('ㅗ' to 'ㅏ') to 'ㅘ', ('ㅗ' to 'ㅐ') to 'ㅙ', ('ㅗ' to 'ㅣ') to 'ㅚ',
         ('ㅜ' to 'ㅓ') to 'ㅝ', ('ㅜ' to 'ㅔ') to 'ㅞ', ('ㅜ' to 'ㅣ') to 'ㅟ',
@@ -20,89 +19,60 @@ class HangulEngine(
         ('ㅣ' to 'ㅏ') to 'ㅑ', ('ㅣ' to 'ㅓ') to 'ㅕ', ('ㅣ' to 'ㅗ') to 'ㅛ', ('ㅣ' to 'ㅜ') to 'ㅠ'
     )
     
-    // 모음 반복 입력 변환 (ㅏㅏ → ㅑ, ㅓㅓ → ㅕ, ㅗㅗ → ㅛ, ㅜㅜ → ㅠ)
     private val VOWEL_DOUBLE_TO_Y = mapOf('ㅏ' to 'ㅑ', 'ㅓ' to 'ㅕ', 'ㅗ' to 'ㅛ', 'ㅜ' to 'ㅠ')
+    
     private val JONGSEONG_COMBINATIONS = mapOf(
         ('ㄱ' to 'ㅅ') to 'ㄳ', ('ㄴ' to 'ㅈ') to 'ㄵ', ('ㄴ' to 'ㅎ') to 'ㄶ',
         ('ㄹ' to 'ㄱ') to 'ㄺ', ('ㄹ' to 'ㅁ') to 'ㄻ', ('ㄹ' to 'ㅂ') to 'ㄼ',
         ('ㄹ' to 'ㅅ') to 'ㄽ', ('ㄹ' to 'ㅌ') to 'ㄾ', ('ㄹ' to 'ㅍ') to 'ㄿ',
         ('ㄹ' to 'ㅎ') to 'ㅀ', ('ㅂ' to 'ㅅ') to 'ㅄ'
     )
+    
     private val JONGSEONG_SPLIT = mapOf(
         'ㄳ' to ('ㄱ' to 'ㅅ'), 'ㄵ' to ('ㄴ' to 'ㅈ'), 'ㄶ' to ('ㄴ' to 'ㅎ'),
         'ㄺ' to ('ㄹ' to 'ㄱ'), 'ㄻ' to ('ㄹ' to 'ㅁ'), 'ㄼ' to ('ㄹ' to 'ㅂ'),
         'ㄽ' to ('ㄹ' to 'ㅅ'), 'ㄾ' to ('ㄹ' to 'ㅌ'), 'ㄿ' to ('ㄹ' to 'ㅍ'),
         'ㅀ' to ('ㄹ' to 'ㅎ'), 'ㅄ' to ('ㅂ' to 'ㅅ'), 'ㄲ' to ('ㄱ' to 'ㄱ'), 'ㅆ' to ('ㅅ' to 'ㅅ')
     )
-    private val ASPIRATED_CONSONANTS = mapOf('ㄱ' to 'ㅋ', 'ㄷ' to 'ㅌ', 'ㅂ' to 'ㅍ', 'ㅈ' to 'ㅊ', 'ㅇ' to 'ㅎ')
     
-    // 된소리 변환 (ㄲ 버튼으로 변환)
     private val DOUBLE_CONSONANTS = mapOf('ㄱ' to 'ㄲ', 'ㄷ' to 'ㄸ', 'ㅂ' to 'ㅃ', 'ㅅ' to 'ㅆ', 'ㅈ' to 'ㅉ')
     
-    // 특수 조합 (ㅅㅅ → ㅆ, ㅁㅁ → ㅂ)
-    private val SPECIAL_COMBINATIONS = mapOf('ㅅ' to 'ㅆ', 'ㅁ' to 'ㅂ')
-    
-    // 자음 순환 (같은 키를 반복해서 누를 때)
     private val CONSONANT_CYCLE = mapOf(
-        'ㄱ' to listOf('ㄱ', 'ㅋ', 'ㄲ'),
-        'ㅋ' to listOf('ㄱ', 'ㅋ', 'ㄲ'),
-        'ㄲ' to listOf('ㄱ', 'ㅋ', 'ㄲ'),
+        'ㄱ' to listOf('ㄱ', 'ㅋ', 'ㄲ'), 'ㅋ' to listOf('ㄱ', 'ㅋ', 'ㄲ'), 'ㄲ' to listOf('ㄱ', 'ㅋ', 'ㄲ'),
         'ㄴ' to listOf('ㄴ'),
-        'ㄷ' to listOf('ㄷ', 'ㅌ', 'ㄸ'),
-        'ㅌ' to listOf('ㄷ', 'ㅌ', 'ㄸ'),
-        'ㄸ' to listOf('ㄷ', 'ㅌ', 'ㄸ'),
+        'ㄷ' to listOf('ㄷ', 'ㅌ', 'ㄸ'), 'ㅌ' to listOf('ㄷ', 'ㅌ', 'ㄸ'), 'ㄸ' to listOf('ㄷ', 'ㅌ', 'ㄸ'),
         'ㄹ' to listOf('ㄹ'),
         'ㅁ' to listOf('ㅁ', 'ㅂ'),
-        'ㅂ' to listOf('ㅂ', 'ㅍ', 'ㅃ'),
-        'ㅍ' to listOf('ㅂ', 'ㅍ', 'ㅃ'),
-        'ㅃ' to listOf('ㅂ', 'ㅍ', 'ㅃ'),
-        'ㅅ' to listOf('ㅅ', 'ㅆ'),
-        'ㅆ' to listOf('ㅅ', 'ㅆ'),
-        'ㅇ' to listOf('ㅇ', 'ㅎ'),
-        'ㅎ' to listOf('ㅇ', 'ㅎ'),
-        'ㅈ' to listOf('ㅈ', 'ㅊ', 'ㅉ'),
-        'ㅊ' to listOf('ㅈ', 'ㅊ', 'ㅉ'),
-        'ㅉ' to listOf('ㅈ', 'ㅊ', 'ㅉ')
+        'ㅂ' to listOf('ㅂ', 'ㅍ', 'ㅃ'), 'ㅍ' to listOf('ㅂ', 'ㅍ', 'ㅃ'), 'ㅃ' to listOf('ㅂ', 'ㅍ', 'ㅃ'),
+        'ㅅ' to listOf('ㅅ', 'ㅆ'), 'ㅆ' to listOf('ㅅ', 'ㅆ'),
+        'ㅇ' to listOf('ㅇ', 'ㅎ'), 'ㅎ' to listOf('ㅇ', 'ㅎ'),
+        'ㅈ' to listOf('ㅈ', 'ㅊ', 'ㅉ'), 'ㅊ' to listOf('ㅈ', 'ㅊ', 'ㅉ'), 'ㅉ' to listOf('ㅈ', 'ㅊ', 'ㅉ')
     )
     
-    // 모음 순환 (같은 키를 반복해서 누를 때)
     private val VOWEL_CYCLE = mapOf(
-        'ㅏ' to listOf('ㅏ', 'ㅑ'),
-        'ㅑ' to listOf('ㅏ', 'ㅑ'),
-        'ㅓ' to listOf('ㅓ', 'ㅕ'),
-        'ㅕ' to listOf('ㅓ', 'ㅕ'),
-        'ㅗ' to listOf('ㅗ', 'ㅛ'),
-        'ㅛ' to listOf('ㅗ', 'ㅛ'),
-        'ㅜ' to listOf('ㅜ', 'ㅠ'),
-        'ㅠ' to listOf('ㅜ', 'ㅠ'),
-        'ㅡ' to listOf('ㅡ'),
-        'ㅣ' to listOf('ㅣ')
+        'ㅏ' to listOf('ㅏ', 'ㅑ'), 'ㅑ' to listOf('ㅏ', 'ㅑ'),
+        'ㅓ' to listOf('ㅓ', 'ㅕ'), 'ㅕ' to listOf('ㅓ', 'ㅕ'),
+        'ㅗ' to listOf('ㅗ', 'ㅛ'), 'ㅛ' to listOf('ㅗ', 'ㅛ'),
+        'ㅜ' to listOf('ㅜ', 'ㅠ'), 'ㅠ' to listOf('ㅜ', 'ㅠ'),
+        'ㅡ' to listOf('ㅡ'), 'ㅣ' to listOf('ㅣ')
     )
 
-    // 상태 변수
     private var currentState = State()
     private var lastKey: Char? = null
     private var lastKeyTime: Long = 0
-    private var pendingConsonant: Char? = null  // 겹받침 조합 실패 후 대기 중인 자음
 
     data class State(var choseong: Char? = null, var jungseong: Char? = null, var jongseong: Char? = null)
     data class Result(val committed: String = "", val composing: String = "")
     
-    // 된소리 변환 함수 (ㄲ 버튼 전용)
     fun applyDoubleConsonant() {
         var changed = false
-        
-        // 종성이 있으면 종성을 된소리로 변환
         if (currentState.jongseong != null && currentState.jongseong in DOUBLE_CONSONANTS.keys) {
             currentState.jongseong = DOUBLE_CONSONANTS[currentState.jongseong]
             changed = true
-        }
-        // 초성만 있으면 초성을 된소리로 변환
-        else if (currentState.choseong != null && currentState.jungseong == null && currentState.choseong in DOUBLE_CONSONANTS.keys) {
+        } else if (currentState.choseong != null && currentState.jungseong == null && currentState.choseong in DOUBLE_CONSONANTS.keys) {
             currentState.choseong = DOUBLE_CONSONANTS[currentState.choseong]
             changed = true
         }
-        
         if (changed) {
             listener(Result(composing = combineHangul()))
         }
@@ -111,18 +81,9 @@ class HangulEngine(
     fun processKey(key: Char) {
         val currentTime = System.currentTimeMillis()
         
-        // 스페이스 처리
         if (key == ' ') {
-            // 대기 중인 자음이 있으면 먼저 처리
-            if (pendingConsonant != null) {
-                val committed = commitCurrentState()
-                currentState.choseong = pendingConsonant
-                pendingConsonant = null
-                listener(Result(committed + " ", ""))
-            } else {
-                val committed = commitCurrentState()
-                listener(Result(committed + " ", ""))
-            }
+            val committed = commitCurrentState()
+            listener(Result(committed + " ", ""))
             lastKey = key
             lastKeyTime = currentTime
             return
@@ -132,53 +93,20 @@ class HangulEngine(
         val isVowel = key in JUNGSEONG_LIST
         val timeSinceLastKey = currentTime - lastKeyTime
         var committed = ""
-        
-        // 대기 중인 자음이 있는 경우 처리
-        if (pendingConsonant != null) {
-            // 같은 키를 타이머 내에 눌렀는지 확인
-            if (isCharacterCycleEnabled && lastKey == key && timeSinceLastKey < syllableTimeoutMs && isConsonant) {
-                val cycle = CONSONANT_CYCLE[key]
-                if (cycle != null && cycle.size > 1) {
-                    // 순환의 다음 문자로 변경
-                    val nextIndex = 1 % cycle.size
-                    val keyToUse = cycle[nextIndex]
-                    
-                    // 겹받침 조합 재시도
-                    val newJongseong = JONGSEONG_COMBINATIONS[currentState.jongseong to keyToUse]
-                    if (newJongseong != null) {
-                        // 겹받침 조합 성공!
-                        currentState.jongseong = newJongseong
-                        pendingConsonant = null
-                        lastKey = key
-                        lastKeyTime = currentTime
-                        listener(Result(composing = combineHangul()))
-                        return
-                    }
-                }
-            }
-            
-            // 타이머 초과 또는 다른 키 입력 - 대기 중인 자음으로 새 음절 시작
-            committed = commitCurrentState()
-            currentState.choseong = pendingConsonant
-            pendingConsonant = null
-        }
 
-        // 같은 키를 타이머 내에 반복해서 누를 때 순환 처리 (설정이 활성화된 경우에만)
+        // 순환 처리
         if (isCharacterCycleEnabled && lastKey == key && timeSinceLastKey < syllableTimeoutMs) {
             var cycled = false
             
             if (isConsonant) {
-                // 자음 순환
                 val cycle = CONSONANT_CYCLE[key]
                 if (cycle != null && cycle.size > 1) {
                     if (currentState.jongseong != null && currentState.jongseong in cycle) {
-                        // 종성 순환
                         val currentIndex = cycle.indexOf(currentState.jongseong)
                         val nextIndex = (currentIndex + 1) % cycle.size
                         currentState.jongseong = cycle[nextIndex]
                         cycled = true
                     } else if (currentState.choseong != null && currentState.jungseong == null && currentState.choseong in cycle) {
-                        // 초성 순환 (중성이 없을 때만)
                         val currentIndex = cycle.indexOf(currentState.choseong)
                         val nextIndex = (currentIndex + 1) % cycle.size
                         currentState.choseong = cycle[nextIndex]
@@ -186,11 +114,9 @@ class HangulEngine(
                     }
                 }
             } else if (isVowel) {
-                // 모음 순환
                 val cycle = VOWEL_CYCLE[key]
                 if (cycle != null && cycle.size > 1) {
                     if (currentState.jungseong != null && currentState.jungseong in cycle && currentState.jongseong == null) {
-                        // 중성 순환 (종성이 없을 때만)
                         val currentIndex = cycle.indexOf(currentState.jungseong)
                         val nextIndex = (currentIndex + 1) % cycle.size
                         currentState.jungseong = cycle[nextIndex]
@@ -209,47 +135,47 @@ class HangulEngine(
 
         if (isConsonant) {
             if (currentState.jungseong != null) {
-                // 중성이 있는 경우 - 종성으로 추가 시도
                 if (currentState.jongseong == null) {
-                    // 종성이 없으면 첫 종성 추가
                     if (JONGSEONG_LIST.contains(key)) {
                         currentState.jongseong = key
                     } else {
-                        // 종성으로 사용할 수 없는 자음 - 새 음절 시작
                         committed = commitCurrentState()
                         currentState.choseong = key
                     }
                 } else {
-                    // 종성이 이미 있는 경우
-                    // 겹받침 조합 시도
                     val newJongseong = JONGSEONG_COMBINATIONS[currentState.jongseong to key]
                     if (newJongseong != null) {
-                        // 겹받침 조합 성공
                         currentState.jongseong = newJongseong
                     } else {
-                        // 겹받침 조합 실패 - 대기 상태로 전환
-                        // 다음 입력이 같은 키면 순환 처리, 아니면 새 음절 시작
-                        pendingConsonant = key
-                        lastKey = key
-                        lastKeyTime = currentTime
-                        listener(Result(committed, combineHangul()))
-                        return
+                        if (isCharacterCycleEnabled && lastKey == key && timeSinceLastKey < syllableTimeoutMs) {
+                            val cycle = CONSONANT_CYCLE[key]
+                            if (cycle != null && cycle.size > 1) {
+                                val nextIndex = 1 % cycle.size
+                                val keyToUse = cycle[nextIndex]
+                                val newJongseongCycle = JONGSEONG_COMBINATIONS[currentState.jongseong to keyToUse]
+                                if (newJongseongCycle != null) {
+                                    currentState.jongseong = newJongseongCycle
+                                    lastKey = key
+                                    lastKeyTime = currentTime
+                                    listener(Result(composing = combineHangul()))
+                                    return
+                                }
+                            }
+                        }
+                        committed = commitCurrentState()
+                        currentState.choseong = key
                     }
                 }
             } else {
-                // 중성이 없는 경우
                 if (currentState.choseong != null && timeSinceLastKey > syllableTimeoutMs) {
-                    // 타이머 초과 시 이전 자음을 바로 커밋하고 새 초성 시작
                     committed += currentState.choseong.toString()
                     currentState = State()
                     currentState.choseong = key
                 } else if (currentState.choseong != null) {
-                    // 타이머 내에 자음이 연속으로 오면 이전 자음 커밋
                     committed += currentState.choseong.toString()
                     currentState = State()
                     currentState.choseong = key
                 } else {
-                    // 아무것도 없는 경우 - 새 초성 시작
                     currentState.choseong = key
                 }
             }
@@ -270,38 +196,29 @@ class HangulEngine(
                     currentState.jungseong = key
                 }
             } else if (currentState.choseong != null) {
-                // 중성이 이미 있는 경우
                 if (currentState.jungseong != null) {
-                    // 1. 같은 모음을 타이머 내에 두 번 눌렀을 때 ㅑ, ㅕ, ㅛ, ㅠ 변환
                     if (currentState.jungseong == key && timeSinceLastKey < syllableTimeoutMs && key in VOWEL_DOUBLE_TO_Y.keys) {
                         currentState.jungseong = VOWEL_DOUBLE_TO_Y[key]!!
-                    }
-                    // 2. 중성 조합 시도 (ㅗ+ㅏ=ㅘ 등)
-                    else {
+                    } else {
                         val newJungseong = JUNGSEONG_COMBINATIONS[currentState.jungseong to key]
                         if (newJungseong != null) {
                             currentState.jungseong = newJungseong
                         } else {
-                            // 조합 불가능하면 현재 음절 완성하고 새 음절 시작
                             committed = commitCurrentState()
-                            currentState.choseong = 'ㅇ'  // 초성 없는 모음은 ㅇ으로 시작
+                            currentState.choseong = 'ㅇ'
                             currentState.jungseong = key
                         }
                     }
                 } else {
-                    // 중성이 없는 경우 - 첫 중성 설정
                     currentState.jungseong = key
                 }
             } else {
-                // 초성 없이 모음만 입력하는 경우 - 모음을 바로 커밋
                 committed += key.toString()
             }
         }
 
-        // 처리 완료 후 lastKey와 lastKeyTime 업데이트
         lastKey = key
         lastKeyTime = currentTime
-        
         listener(Result(committed, combineHangul()))
     }
 
@@ -335,7 +252,6 @@ class HangulEngine(
         currentState = State()
         lastKey = null
         lastKeyTime = 0
-        pendingConsonant = null
     }
 
     private fun combineHangul(): String {
