@@ -293,6 +293,10 @@ class NeoFKeyboardService : InputMethodService() {
         touchColor = SettingsActivity.getTouchColor(this)
         enterLongPressThreshold = SettingsActivity.getEnterLongPressThreshold(this)
         
+        // HangulEngine 설정 업데이트
+        hangulEngine?.syllableTimeoutMs = SettingsActivity.getSyllableTimeout(this)
+        hangulEngine?.isCharacterCycleEnabled = SettingsActivity.isCharacterCycleEnabled(this)
+        
         Log.d(TAG, "Settings reloaded in onStartInput")
     }
     
@@ -384,9 +388,11 @@ class NeoFKeyboardService : InputMethodService() {
     }
 
     private fun setupHangulEngine() {
-        // 설정에서 타이머 값 읽기
+        // 설정에서 타이머 값과 문자 순환 설정 읽기
         val syllableTimeout = SettingsActivity.getSyllableTimeout(this)
+        val isCharacterCycleEnabled = SettingsActivity.isCharacterCycleEnabled(this)
         Log.d(TAG, "Syllable timeout set to: $syllableTimeout ms")
+        Log.d(TAG, "Character cycle enabled: $isCharacterCycleEnabled")
         
         hangulEngine = HangulEngine({ result ->
             val ic = currentInputConnection ?: return@HangulEngine
@@ -409,7 +415,7 @@ class NeoFKeyboardService : InputMethodService() {
             } else {
                 composingText = ""
             }
-        }, syllableTimeout)
+        }, syllableTimeout, isCharacterCycleEnabled)
     }
 
     private fun setupKoreanKeyboardListeners(view: View) {

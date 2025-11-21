@@ -2,7 +2,8 @@ package com.example.neo_f
 
 class HangulEngine(
     private val listener: (Result) -> Unit,
-    var syllableTimeoutMs: Long = 300L  // 음절 조합 타이머 (기본 300ms)
+    var syllableTimeoutMs: Long = 300L,  // 음절 조합 타이머 (기본 300ms)
+    var isCharacterCycleEnabled: Boolean = true  // 문자 순환 기능 활성화 여부
 ) {
 
     // 초성, 중성, 종성 리스트
@@ -123,8 +124,8 @@ class HangulEngine(
         val timeSinceLastKey = currentTime - lastKeyTime
         var committed = ""
 
-        // 같은 키를 타이머 내에 반복해서 누를 때 순환 처리
-        if (lastKey == key && timeSinceLastKey < syllableTimeoutMs) {
+        // 같은 키를 타이머 내에 반복해서 누를 때 순환 처리 (설정이 활성화된 경우에만)
+        if (isCharacterCycleEnabled && lastKey == key && timeSinceLastKey < syllableTimeoutMs) {
             var cycled = false
             
             if (isConsonant) {

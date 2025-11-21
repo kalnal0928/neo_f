@@ -16,6 +16,7 @@ class InputSettingsFragment : Fragment() {
     private lateinit var presetFast: Button
     private lateinit var presetNormal: Button
     private lateinit var presetSlow: Button
+    private lateinit var switchCharacterCycle: androidx.appcompat.widget.SwitchCompat
     private lateinit var enterThresholdSeekBar: SeekBar
     private lateinit var enterThresholdValueText: TextView
 
@@ -35,14 +36,17 @@ class InputSettingsFragment : Fragment() {
         presetFast = view.findViewById(R.id.preset_fast)
         presetNormal = view.findViewById(R.id.preset_normal)
         presetSlow = view.findViewById(R.id.preset_slow)
+        switchCharacterCycle = view.findViewById(R.id.switch_character_cycle)
         enterThresholdSeekBar = view.findViewById(R.id.enter_threshold_seekbar)
         enterThresholdValueText = view.findViewById(R.id.enter_threshold_value)
 
         // 현재 설정 불러오기
         val currentTimeout = SettingsActivity.getSyllableTimeout(requireContext())
+        val currentCharacterCycleEnabled = SettingsActivity.isCharacterCycleEnabled(requireContext())
         val currentEnterThreshold = SettingsActivity.getEnterLongPressThreshold(requireContext())
 
         updateSeekBarFromTimeout(currentTimeout)
+        switchCharacterCycle.isChecked = currentCharacterCycleEnabled
         updateEnterThresholdSeekBar(currentEnterThreshold)
 
         // 음절 타이머 SeekBar 리스너
@@ -76,6 +80,11 @@ class InputSettingsFragment : Fragment() {
             val timeout = 500L
             SettingsActivity.setSyllableTimeout(requireContext(), timeout)
             updateSeekBarFromTimeout(timeout)
+        }
+
+        // 문자 순환 스위치 리스너
+        switchCharacterCycle.setOnCheckedChangeListener { _, isChecked ->
+            SettingsActivity.setCharacterCycleEnabled(requireContext(), isChecked)
         }
 
         // 엔터키 SeekBar 리스너

@@ -28,6 +28,7 @@ class SettingsActivity : AppCompatActivity() {
     companion object {
         private const val PREFS_NAME = "NeoFKeyboardPrefs"
         private const val KEY_SYLLABLE_TIMEOUT = "syllable_timeout_ms"
+        private const val KEY_CHARACTER_CYCLE_ENABLED = "character_cycle_enabled"
         private const val KEY_SOUND_ENABLED = "sound_enabled"
         private const val KEY_TEXT_SIZE = "text_size_sp"
         private const val KEY_VIBRATION_ENABLED = "vibration_enabled"
@@ -44,6 +45,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_FUNCTIONAL_KEY_COLOR = "functional_key_color"
         
         private const val DEFAULT_TIMEOUT = 300L
+        private const val DEFAULT_CHARACTER_CYCLE_ENABLED = true
         private const val DEFAULT_SOUND_ENABLED = true
         private const val DEFAULT_TEXT_SIZE = 18f
         private const val DEFAULT_VIBRATION_ENABLED = true
@@ -67,6 +69,16 @@ class SettingsActivity : AppCompatActivity() {
         fun setSyllableTimeout(context: Context, timeoutMs: Long) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putLong(KEY_SYLLABLE_TIMEOUT, timeoutMs).apply()
+        }
+
+        fun isCharacterCycleEnabled(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_CHARACTER_CYCLE_ENABLED, DEFAULT_CHARACTER_CYCLE_ENABLED)
+        }
+
+        fun setCharacterCycleEnabled(context: Context, enabled: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_CHARACTER_CYCLE_ENABLED, enabled).apply()
         }
 
         fun isSoundEnabled(context: Context): Boolean {
@@ -269,6 +281,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun resetToDefaults() {
         setSyllableTimeout(this, DEFAULT_TIMEOUT)
+        setCharacterCycleEnabled(this, DEFAULT_CHARACTER_CYCLE_ENABLED)
         setSoundEnabled(this, DEFAULT_SOUND_ENABLED)
         setTextSize(this, DEFAULT_TEXT_SIZE)
         setVibrationEnabled(this, DEFAULT_VIBRATION_ENABLED)
