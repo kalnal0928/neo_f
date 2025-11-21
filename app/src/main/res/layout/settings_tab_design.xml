@@ -256,6 +256,88 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="16dp"/>
 
+        <!-- 키 높이 설정 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키 높이"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="키보드 버튼의 높이를 조절합니다."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="현재 높이:"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <TextView
+                android:id="@+id/key_height_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="48 dp"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/key_height_seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="32"
+            android:progress="16"
+            android:paddingBottom="16dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="낮게 (32dp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="높게 (64dp)"
+                android:textSize="12sp"
+                android:textColor="#999999"/>
+        </LinearLayout>
+
+        <!-- 구분선 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"/>
+
         <!-- 색상 설정 -->
         <TextView
             android:layout_width="match_parent"
@@ -343,7 +425,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingBottom="24dp">
+            android:paddingBottom="8dp">
 
             <TextView
                 android:layout_width="0dp"
@@ -362,6 +444,37 @@
 
             <Button
                 android:id="@+id/functional_key_color_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="변경"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- 터치 시 색상 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="터치 시 색상"
+                android:textSize="16sp"
+                android:textColor="#000000"/>
+
+            <View
+                android:id="@+id/touch_color_preview"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:background="#4CAF50"/>
+
+            <Button
+                android:id="@+id/touch_color_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="변경"

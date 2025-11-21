@@ -38,6 +38,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val KEY_SHOW_NUMBER_ROW = "show_number_row"
         private const val KEY_KEY_SPACING = "key_spacing"
         private const val KEY_KEY_CORNER_RADIUS = "key_corner_radius"
+        private const val KEY_KEY_HEIGHT = "key_height"
         private const val KEY_TEXT_COLOR = "text_color"
         private const val KEY_KEY_BACKGROUND_COLOR = "key_background_color"
         private const val KEY_FUNCTIONAL_KEY_COLOR = "functional_key_color"
@@ -53,6 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         private const val DEFAULT_SHOW_NUMBER_ROW = false
         private const val DEFAULT_KEY_SPACING = 2
         private const val DEFAULT_KEY_CORNER_RADIUS = 4
+        private const val DEFAULT_KEY_HEIGHT = 48  // 기본 키 높이 (dp)
         private const val DEFAULT_TEXT_COLOR = 0xFFFFFFFF.toInt()  // 흰색
         private const val DEFAULT_KEY_BACKGROUND_COLOR = 0xFF424242.toInt()  // 회색
         private const val DEFAULT_FUNCTIONAL_KEY_COLOR = 0xFF616161.toInt()  // 진한 회색
@@ -127,6 +129,8 @@ class SettingsActivity : AppCompatActivity() {
         fun setTouchColor(context: Context, color: Int) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putInt(KEY_TOUCH_COLOR, color).apply()
+            // 터치 색상은 재생성 없이도 적용 가능하지만, 일관성을 위해 플래그 설정
+            prefs.edit().putBoolean("needs_recreate", true).apply()
         }
 
         fun getEnterLongPressThreshold(context: Context): Long {
@@ -205,6 +209,17 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putInt(KEY_FUNCTIONAL_KEY_COLOR, color).apply()
             prefs.edit().putBoolean("needs_recreate", true).apply()
         }
+
+        fun getKeyHeight(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_KEY_HEIGHT, DEFAULT_KEY_HEIGHT)
+        }
+
+        fun setKeyHeight(context: Context, height: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_KEY_HEIGHT, height).apply()
+            prefs.edit().putBoolean("needs_recreate", true).apply()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -264,6 +279,7 @@ class SettingsActivity : AppCompatActivity() {
         setShowNumberRow(this, DEFAULT_SHOW_NUMBER_ROW)
         setKeySpacing(this, DEFAULT_KEY_SPACING)
         setKeyCornerRadius(this, DEFAULT_KEY_CORNER_RADIUS)
+        setKeyHeight(this, DEFAULT_KEY_HEIGHT)
         setTextColor(this, DEFAULT_TEXT_COLOR)
         setKeyBackgroundColor(this, DEFAULT_KEY_BACKGROUND_COLOR)
         setFunctionalKeyColor(this, DEFAULT_FUNCTIONAL_KEY_COLOR)

@@ -125,6 +125,28 @@ class NeoFKeyboardService : InputMethodService() {
         applyKeyCornerRadiusToButtons(view, cornerRadius)
     }
     
+    private fun applyKeyHeight(view: View) {
+        val keyHeight = SettingsActivity.getKeyHeight(this)
+        Log.d(TAG, "Applying key height: $keyHeight dp")
+        
+        // 모든 버튼에 높이 적용
+        applyKeyHeightToButtons(view, keyHeight)
+    }
+    
+    private fun applyKeyHeightToButtons(view: View, heightDp: Int) {
+        if (view is Button) {
+            val heightPx = (heightDp * resources.displayMetrics.density).toInt()
+            val params = view.layoutParams
+            params.height = heightPx
+            view.layoutParams = params
+            Log.d(TAG, "Applied height $heightDp dp to button: ${view.text}")
+        } else if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) {
+                applyKeyHeightToButtons(view.getChildAt(i), heightDp)
+            }
+        }
+    }
+    
     private fun applyKeyCornerRadiusToButtons(view: View, radiusDp: Int) {
         if (view is Button) {
             val radiusPx = (radiusDp * resources.displayMetrics.density).toInt()
@@ -143,7 +165,7 @@ class NeoFKeyboardService : InputMethodService() {
                 R.id.key_mode_kor, R.id.key_mode_num, R.id.key_mode_eng, R.id.key_mode_sym,
                 R.id.key_shift, R.id.key_shift_eng, R.id.key_hangul_num,
                 R.id.key_space, R.id.key_space_eng, R.id.key_space_num, R.id.key_space_sym,
-                R.id.key_enter, R.id.key_enter_eng, R.id.key_search_num, R.id.key_enter_sym,
+                R.id.key_enter_eng, R.id.key_search_kor, R.id.key_search_num, R.id.key_enter_sym,
                 R.id.key_backspace, R.id.key_backspace_eng, R.id.key_backspace_num, R.id.key_backspace_sym,
                 R.id.key_del_eng, R.id.key_at_eng, R.id.key_period_eng, R.id.key_comma_eng,
                 R.id.key_0_kor, R.id.key_1_kor, R.id.key_2_kor, R.id.key_3_kor, R.id.key_4_kor,
@@ -246,6 +268,9 @@ class NeoFKeyboardService : InputMethodService() {
             
             applyKeyCornerRadius(view)
             Log.d(TAG, "Key corner radius applied")
+            
+            applyKeyHeight(view)
+            Log.d(TAG, "Key height applied")
 
             view
         } catch (e: Exception) {
@@ -390,8 +415,8 @@ class NeoFKeyboardService : InputMethodService() {
     private fun setupKoreanKeyboardListeners(view: View) {
         val keyButtons = mapOf(
             R.id.key_g to 'ㄱ', R.id.key_n to 'ㄴ', R.id.key_d to 'ㄷ', R.id.key_a to 'ㅏ', R.id.key_eo to 'ㅓ',
-            R.id.key_r to 'ㄹ', R.id.key_m to 'ㅁ', R.id.key_b to 'ㅂ', R.id.key_o to 'ㅗ', R.id.key_u to 'ㅜ',
-            R.id.key_s to 'ㅅ', R.id.key_ng to 'ㅇ', R.id.key_j to 'ㅈ', R.id.key_eu to 'ㅡ', R.id.key_i to 'ㅣ'
+            R.id.key_r to 'ㄹ', R.id.key_m to 'ㅁ', R.id.key_b to 'ㅂ', R.id.key_o to 'ㅡ', R.id.key_u to 'ㅣ',
+            R.id.key_s to 'ㅅ', R.id.key_ng to 'ㅇ', R.id.key_j to 'ㅈ', R.id.key_eu to 'ㅗ', R.id.key_i to 'ㅜ'
         )
 
         keyButtons.forEach { (id, char) ->
@@ -663,8 +688,12 @@ class NeoFKeyboardService : InputMethodService() {
                 else -> false
             }
         }
-        view.findViewById<Button?>(R.id.key_enter)?.setOnTouchListener(enterTouchListener)
         view.findViewById<Button?>(R.id.key_enter_eng)?.setOnTouchListener(enterTouchListener)
+
+        // 한글 키보드의 검색 버튼
+        setupButtonWithFeedback(view.findViewById(R.id.key_search_kor)) {
+            sendEnterAction()
+        }
 
         setupButtonWithFeedback(view.findViewById(R.id.key_space)) {
             if (currentKeyboardMode == KeyboardMode.KOREAN) {

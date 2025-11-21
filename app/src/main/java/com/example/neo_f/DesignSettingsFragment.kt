@@ -17,6 +17,8 @@ class DesignSettingsFragment : Fragment() {
     private lateinit var keySpacingValueText: TextView
     private lateinit var keyCornerRadiusSeekBar: SeekBar
     private lateinit var keyCornerRadiusValueText: TextView
+    private lateinit var keyHeightSeekBar: SeekBar
+    private lateinit var keyHeightValueText: TextView
     private lateinit var numberRowSwitch: SwitchCompat
     
     private lateinit var textColorPreview: View
@@ -25,6 +27,8 @@ class DesignSettingsFragment : Fragment() {
     private lateinit var keyBackgroundColorButton: android.widget.Button
     private lateinit var functionalKeyColorPreview: View
     private lateinit var functionalKeyColorButton: android.widget.Button
+    private lateinit var touchColorPreview: View
+    private lateinit var touchColorButton: android.widget.Button
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +47,8 @@ class DesignSettingsFragment : Fragment() {
         keySpacingValueText = view.findViewById(R.id.key_spacing_value)
         keyCornerRadiusSeekBar = view.findViewById(R.id.key_corner_radius_seekbar)
         keyCornerRadiusValueText = view.findViewById(R.id.key_corner_radius_value)
+        keyHeightSeekBar = view.findViewById(R.id.key_height_seekbar)
+        keyHeightValueText = view.findViewById(R.id.key_height_value)
         numberRowSwitch = view.findViewById(R.id.number_row_switch)
         
         textColorPreview = view.findViewById(R.id.text_color_preview)
@@ -51,24 +57,30 @@ class DesignSettingsFragment : Fragment() {
         keyBackgroundColorButton = view.findViewById(R.id.key_background_color_button)
         functionalKeyColorPreview = view.findViewById(R.id.functional_key_color_preview)
         functionalKeyColorButton = view.findViewById(R.id.functional_key_color_button)
+        touchColorPreview = view.findViewById(R.id.touch_color_preview)
+        touchColorButton = view.findViewById(R.id.touch_color_button)
 
         // 현재 설정 불러오기
         val currentTextSize = SettingsActivity.getTextSize(requireContext())
         val currentKeySpacing = SettingsActivity.getKeySpacing(requireContext())
         val currentKeyCornerRadius = SettingsActivity.getKeyCornerRadius(requireContext())
+        val currentKeyHeight = SettingsActivity.getKeyHeight(requireContext())
         val currentShowNumberRow = SettingsActivity.isShowNumberRow(requireContext())
         val currentTextColor = SettingsActivity.getTextColor(requireContext())
         val currentKeyBackgroundColor = SettingsActivity.getKeyBackgroundColor(requireContext())
         val currentFunctionalKeyColor = SettingsActivity.getFunctionalKeyColor(requireContext())
+        val currentTouchColor = SettingsActivity.getTouchColor(requireContext())
 
         updateTextSizeSeekBar(currentTextSize)
         updateKeySpacingSeekBar(currentKeySpacing)
         updateKeyCornerRadiusSeekBar(currentKeyCornerRadius)
+        updateKeyHeightSeekBar(currentKeyHeight)
         numberRowSwitch.isChecked = currentShowNumberRow
         
         textColorPreview.setBackgroundColor(currentTextColor)
         keyBackgroundColorPreview.setBackgroundColor(currentKeyBackgroundColor)
         functionalKeyColorPreview.setBackgroundColor(currentFunctionalKeyColor)
+        touchColorPreview.setBackgroundColor(currentTouchColor)
 
         // 글자 크기 SeekBar 리스너
         textSizeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -110,6 +122,20 @@ class DesignSettingsFragment : Fragment() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
+        // 키 높이 SeekBar 리스너
+        keyHeightSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val height = progress + 32  // 32dp ~ 64dp
+                keyHeightValueText.text = "$height dp"
+                if (fromUser) {
+                    SettingsActivity.setKeyHeight(requireContext(), height)
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
         // 숫자 행 스위치 리스너
         numberRowSwitch.setOnCheckedChangeListener { _, isChecked ->
             SettingsActivity.setShowNumberRow(requireContext(), isChecked)
@@ -134,6 +160,13 @@ class DesignSettingsFragment : Fragment() {
             showColorPickerDialog(currentFunctionalKeyColor) { color ->
                 SettingsActivity.setFunctionalKeyColor(requireContext(), color)
                 functionalKeyColorPreview.setBackgroundColor(color)
+            }
+        }
+        
+        touchColorButton.setOnClickListener {
+            showColorPickerDialog(currentTouchColor) { color ->
+                SettingsActivity.setTouchColor(requireContext(), color)
+                touchColorPreview.setBackgroundColor(color)
             }
         }
     }
@@ -181,5 +214,10 @@ class DesignSettingsFragment : Fragment() {
     private fun updateKeyCornerRadiusSeekBar(radius: Int) {
         keyCornerRadiusSeekBar.progress = radius.coerceIn(0, 24)
         keyCornerRadiusValueText.text = "$radius dp"
+    }
+
+    private fun updateKeyHeightSeekBar(height: Int) {
+        keyHeightSeekBar.progress = (height - 32).coerceIn(0, 32)
+        keyHeightValueText.text = "$height dp"
     }
 }
