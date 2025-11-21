@@ -240,9 +240,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
-                <Button android:id="@+id/key_mode_sym" android:text="ABC" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
+                <Button android:id="@+id/key_mode_sym" android:text="한글" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
                 <Button android:id="@+id/key_space_sym" android:text=" " style="@style/KeyboardKey.Functional" android:layout_weight="4"/>
-                <Button android:id="@+id/key_enter_sym" android:text="↵" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
+                <Button android:id="@+id/key_enter_sym" android:text="ENT" style="@style/KeyboardKey.Functional" android:layout_weight="1.5"/>
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>

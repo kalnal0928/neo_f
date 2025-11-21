@@ -2,44 +2,52 @@ package com.example.neo_f
 
 import android.content.Context
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var timerSeekBar: SeekBar
-    private lateinit var timerValueText: TextView
-    private lateinit var presetFast: Button
-    private lateinit var presetNormal: Button
-    private lateinit var presetSlow: Button
-    private lateinit var soundSwitch: SwitchCompat
-    private lateinit var textSizeSeekBar: SeekBar
-    private lateinit var textSizeValueText: TextView
+    private lateinit var tabLayout: TabLayout
+    private lateinit var viewPager: ViewPager2
     private lateinit var btnSave: Button
     private lateinit var btnCancel: Button
     private lateinit var btnReset: Button
-    
-    // 임시 설정값 (저장 전)
-    private var tempSyllableTimeout: Long = 0
-    private var tempSoundEnabled: Boolean = true
-    private var tempTextSize: Float = 0f
-    
-    // 원본 설정값 (취소 시 복원용)
-    private var originalSyllableTimeout: Long = 0
-    private var originalSoundEnabled: Boolean = true
-    private var originalTextSize: Float = 0f
 
     companion object {
         private const val PREFS_NAME = "NeoFKeyboardPrefs"
         private const val KEY_SYLLABLE_TIMEOUT = "syllable_timeout_ms"
         private const val KEY_SOUND_ENABLED = "sound_enabled"
         private const val KEY_TEXT_SIZE = "text_size_sp"
+        private const val KEY_VIBRATION_ENABLED = "vibration_enabled"
+        private const val KEY_COLOR_EFFECT_ENABLED = "color_effect_enabled"
+        private const val KEY_SCALE_EFFECT_ENABLED = "scale_effect_enabled"
+        private const val KEY_TOUCH_COLOR = "touch_color"
+        private const val KEY_ENTER_LONG_PRESS_THRESHOLD = "enter_long_press_threshold"
+        private const val KEY_SHOW_NUMBER_ROW = "show_number_row"
+        private const val KEY_KEY_SPACING = "key_spacing"
+        
         private const val DEFAULT_TIMEOUT = 300L
         private const val DEFAULT_SOUND_ENABLED = true
         private const val DEFAULT_TEXT_SIZE = 18f
+        private const val DEFAULT_VIBRATION_ENABLED = true
+        private const val DEFAULT_COLOR_EFFECT_ENABLED = true
+        private const val DEFAULT_SCALE_EFFECT_ENABLED = true
+        private const val DEFAULT_TOUCH_COLOR = 0xFF4CAF50.toInt()
+        private const val DEFAULT_ENTER_LONG_PRESS_THRESHOLD = 500L
+        private const val DEFAULT_SHOW_NUMBER_ROW = false
+        private const val DEFAULT_KEY_SPACING = 2
 
         fun getSyllableTimeout(context: Context): Long {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -70,143 +78,150 @@ class SettingsActivity : AppCompatActivity() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putFloat(KEY_TEXT_SIZE, textSize).apply()
         }
+
+        fun isVibrationEnabled(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_VIBRATION_ENABLED, DEFAULT_VIBRATION_ENABLED)
+        }
+
+        fun setVibrationEnabled(context: Context, enabled: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_VIBRATION_ENABLED, enabled).apply()
+        }
+
+        fun isColorEffectEnabled(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_COLOR_EFFECT_ENABLED, DEFAULT_COLOR_EFFECT_ENABLED)
+        }
+
+        fun setColorEffectEnabled(context: Context, enabled: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_COLOR_EFFECT_ENABLED, enabled).apply()
+        }
+
+        fun isScaleEffectEnabled(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_SCALE_EFFECT_ENABLED, DEFAULT_SCALE_EFFECT_ENABLED)
+        }
+
+        fun setScaleEffectEnabled(context: Context, enabled: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_SCALE_EFFECT_ENABLED, enabled).apply()
+        }
+
+        fun getTouchColor(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_TOUCH_COLOR, DEFAULT_TOUCH_COLOR)
+        }
+
+        fun setTouchColor(context: Context, color: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_TOUCH_COLOR, color).apply()
+        }
+
+        fun getEnterLongPressThreshold(context: Context): Long {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getLong(KEY_ENTER_LONG_PRESS_THRESHOLD, DEFAULT_ENTER_LONG_PRESS_THRESHOLD)
+        }
+
+        fun setEnterLongPressThreshold(context: Context, thresholdMs: Long) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putLong(KEY_ENTER_LONG_PRESS_THRESHOLD, thresholdMs).apply()
+        }
+
+        fun isShowNumberRow(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_SHOW_NUMBER_ROW, DEFAULT_SHOW_NUMBER_ROW)
+        }
+
+        fun setShowNumberRow(context: Context, show: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_SHOW_NUMBER_ROW, show).apply()
+        }
+
+        fun getKeySpacing(context: Context): Int {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(KEY_KEY_SPACING, DEFAULT_KEY_SPACING)
+        }
+
+        fun setKeySpacing(context: Context, spacing: Int) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putInt(KEY_KEY_SPACING, spacing).apply()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
-        // 뷰 초기화
-        timerSeekBar = findViewById(R.id.timer_seekbar)
-        timerValueText = findViewById(R.id.timer_value_text)
-        presetFast = findViewById(R.id.preset_fast)
-        presetNormal = findViewById(R.id.preset_normal)
-        presetSlow = findViewById(R.id.preset_slow)
-        soundSwitch = findViewById(R.id.sound_switch)
-        textSizeSeekBar = findViewById(R.id.text_size_seekbar)
-        textSizeValueText = findViewById(R.id.text_size_value)
+        tabLayout = findViewById(R.id.tab_layout)
+        viewPager = findViewById(R.id.view_pager)
         btnSave = findViewById(R.id.btn_save)
         btnCancel = findViewById(R.id.btn_cancel)
         btnReset = findViewById(R.id.btn_reset)
 
-        // 현재 설정 불러오기 및 백업
-        originalSyllableTimeout = getSyllableTimeout(this)
-        originalSoundEnabled = isSoundEnabled(this)
-        originalTextSize = getTextSize(this)
-        
-        tempSyllableTimeout = originalSyllableTimeout
-        tempSoundEnabled = originalSoundEnabled
-        tempTextSize = originalTextSize
-        
-        // 리스너 설정 전에 초기값 설정
-        updateSeekBarFromTimeout(tempSyllableTimeout)
-        updateTextSizeSeekBar(tempTextSize)
-        soundSwitch.setOnCheckedChangeListener(null) // 리스너 제거
-        soundSwitch.isChecked = tempSoundEnabled
+        // ViewPager 어댑터 설정
+        val adapter = SettingsPagerAdapter(this)
+        viewPager.adapter = adapter
 
-        // SeekBar 리스너 설정
-        timerSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // 100ms ~ 1000ms 범위로 변환
-                val timeoutMs = (progress + 100).toLong()
-                timerValueText.text = "$timeoutMs ms"
-                if (fromUser) {
-                    tempSyllableTimeout = timeoutMs
-                }
+        // TabLayout과 ViewPager 연결
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> "입력"
+                1 -> "디자인"
+                2 -> "피드백"
+                else -> ""
             }
+        }.attach()
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        // 프리셋 버튼 리스너
-        presetFast.setOnClickListener {
-            tempSyllableTimeout = 150L
-            updateSeekBarFromTimeout(tempSyllableTimeout)
-        }
-
-        presetNormal.setOnClickListener {
-            tempSyllableTimeout = 300L
-            updateSeekBarFromTimeout(tempSyllableTimeout)
-        }
-
-        presetSlow.setOnClickListener {
-            tempSyllableTimeout = 500L
-            updateSeekBarFromTimeout(tempSyllableTimeout)
-        }
-
-        // 터치음 스위치 리스너
-        soundSwitch.setOnCheckedChangeListener { _, isChecked ->
-            tempSoundEnabled = isChecked
-        }
-
-        // 글자 크기 SeekBar 리스너
-        textSizeSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // 12sp ~ 32sp 범위로 변환
-                val textSize = (progress + 12).toFloat()
-                textSizeValueText.text = "${textSize.toInt()} sp"
-                if (fromUser) {
-                    tempTextSize = textSize
-                }
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-        
-        // 저장 버튼
+        // 버튼 리스너
         btnSave.setOnClickListener {
-            saveSettings()
+            saveAllSettings()
             finish()
         }
-        
-        // 취소 버튼
+
         btnCancel.setOnClickListener {
             finish()
         }
-        
-        // 기본값 버튼
+
         btnReset.setOnClickListener {
             resetToDefaults()
         }
     }
-    
-    private fun saveSettings() {
-        setSyllableTimeout(this, tempSyllableTimeout)
-        setSoundEnabled(this, tempSoundEnabled)
-        setTextSize(this, tempTextSize)
-        
+
+    private fun saveAllSettings() {
+        // 각 프래그먼트에서 설정 저장
         android.widget.Toast.makeText(this, "설정이 저장되었습니다", android.widget.Toast.LENGTH_SHORT).show()
     }
-    
+
     private fun resetToDefaults() {
-        tempSyllableTimeout = DEFAULT_TIMEOUT
-        tempSoundEnabled = DEFAULT_SOUND_ENABLED
-        tempTextSize = DEFAULT_TEXT_SIZE
+        setSyllableTimeout(this, DEFAULT_TIMEOUT)
+        setSoundEnabled(this, DEFAULT_SOUND_ENABLED)
+        setTextSize(this, DEFAULT_TEXT_SIZE)
+        setVibrationEnabled(this, DEFAULT_VIBRATION_ENABLED)
+        setColorEffectEnabled(this, DEFAULT_COLOR_EFFECT_ENABLED)
+        setScaleEffectEnabled(this, DEFAULT_SCALE_EFFECT_ENABLED)
+        setTouchColor(this, DEFAULT_TOUCH_COLOR)
+        setEnterLongPressThreshold(this, DEFAULT_ENTER_LONG_PRESS_THRESHOLD)
+        setShowNumberRow(this, DEFAULT_SHOW_NUMBER_ROW)
+        setKeySpacing(this, DEFAULT_KEY_SPACING)
         
-        updateSeekBarFromTimeout(tempSyllableTimeout)
-        soundSwitch.isChecked = tempSoundEnabled
-        updateTextSizeSeekBar(tempTextSize)
+        // 프래그먼트 새로고침
+        recreate()
         
         android.widget.Toast.makeText(this, "기본값으로 복원되었습니다", android.widget.Toast.LENGTH_SHORT).show()
     }
 
-    private fun updateTextSizeSeekBar(textSize: Float) {
-        // 12sp ~ 32sp 범위를 0 ~ 20 progress로 변환
-        val progress = (textSize - 12).toInt().coerceIn(0, 20)
-        textSizeSeekBar.progress = progress
-        textSizeValueText.text = "${textSize.toInt()} sp"
+    private class SettingsPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
+        override fun getItemCount(): Int = 3
+
+        override fun createFragment(position: Int): Fragment {
+            return when (position) {
+                0 -> InputSettingsFragment()
+                1 -> DesignSettingsFragment()
+                2 -> FeedbackSettingsFragment()
+                else -> InputSettingsFragment()
+            }
+        }
     }
-
-    private fun updateSeekBarFromTimeout(timeoutMs: Long) {
-        // 100ms ~ 1000ms 범위를 0 ~ 900 progress로 변환
-        val progress = (timeoutMs - 100).toInt().coerceIn(0, 900)
-        timerSeekBar.progress = progress
-        timerValueText.text = "$timeoutMs ms"
-    }
-
-
 }

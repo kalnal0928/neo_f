@@ -18,6 +18,9 @@ class HangulEngine(
         ('ㅏ' to 'ㅣ') to 'ㅐ', ('ㅓ' to 'ㅣ') to 'ㅔ',
         ('ㅣ' to 'ㅏ') to 'ㅑ', ('ㅣ' to 'ㅓ') to 'ㅕ', ('ㅣ' to 'ㅗ') to 'ㅛ', ('ㅣ' to 'ㅜ') to 'ㅠ'
     )
+    
+    // 모음 반복 입력 변환 (ㅏㅏ → ㅑ, ㅓㅓ → ㅕ, ㅗㅗ → ㅛ, ㅜㅜ → ㅠ)
+    private val VOWEL_DOUBLE_TO_Y = mapOf('ㅏ' to 'ㅑ', 'ㅓ' to 'ㅕ', 'ㅗ' to 'ㅛ', 'ㅜ' to 'ㅠ')
     private val JONGSEONG_COMBINATIONS = mapOf(
         ('ㄱ' to 'ㅅ') to 'ㄳ', ('ㄴ' to 'ㅈ') to 'ㄵ', ('ㄴ' to 'ㅎ') to 'ㄶ',
         ('ㄹ' to 'ㄱ') to 'ㄺ', ('ㄹ' to 'ㅁ') to 'ㄻ', ('ㄹ' to 'ㅂ') to 'ㄼ',
@@ -68,6 +71,14 @@ class HangulEngine(
 
     fun processKey(key: Char) {
         val currentTime = System.currentTimeMillis()
+        
+        // 스페이스 처리
+        if (key == ' ') {
+            val committed = commitCurrentState()
+            listener(Result(committed + " ", ""))
+            return
+        }
+        
         val isConsonant = key in CHOSEONG_LIST
         val isVowel = key in JUNGSEONG_LIST
         val timeSinceLastKey = currentTime - lastKeyTime
@@ -147,6 +158,19 @@ class HangulEngine(
                 }
             }
         } else if (isVowel) {
+            // 같은 모음을 타이머 내에 두 번 눌렀을 때 ㅑ, ㅕ, ㅛ, ㅠ 변환
+            if (lastKey == key && timeSinceLastKey < syllableTimeoutMs && key in VOWEL_DOUBLE_TO_Y.keys) {
+                val yVowel = VOWEL_DOUBLE_TO_Y[key]!!
+                
+                if (currentState.jungseong == key && currentState.jongseong == null) {
+                    currentState.jungseong = yVowel
+                    lastKey = key
+                    lastKeyTime = currentTime
+                    listener(Result(composing = combineHangul()))
+                    return
+                }
+            }
+            
             if (currentState.jongseong != null) {
                 val split = JONGSEONG_SPLIT[currentState.jongseong]
                 val lastJongseong = currentState.jongseong

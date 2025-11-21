@@ -25,9 +25,15 @@ class NeoFKeyboardService : InputMethodService() {
     private var koreanKeyboardLayout: LinearLayout? = null
     private var englishKeyboardLayout: LinearLayout? = null
     private var symbolKeyboardLayout: LinearLayout? = null
+    private var numberRowKorean: LinearLayout? = null
+    private var numberRowEnglish: LinearLayout? = null
     
     private var audioManager: AudioManager? = null
     private var isSoundEnabled = true
+    private var isVibrationEnabled = true
+    private var isColorEffectEnabled = true
+    private var isScaleEffectEnabled = true
+    private var touchColor = 0xFF4CAF50.toInt()
     private var keyboardView: View? = null
 
     private var isKoreanShifted = false
@@ -52,6 +58,11 @@ class NeoFKeyboardService : InputMethodService() {
     private var backspaceRunnable: Runnable? = null
     private val LONG_PRESS_THRESHOLD = 500L
     private val REPEAT_DELAY = 50L
+    
+    private val enterHandler = Handler(Looper.getMainLooper())
+    private var enterLongPressRunnable: Runnable? = null
+    private var enterPressStartTime = 0L
+    private var enterLongPressThreshold = 500L
 
     override fun onCreate() {
         super.onCreate()
@@ -75,6 +86,26 @@ class NeoFKeyboardService : InputMethodService() {
         } else if (view is android.view.ViewGroup) {
             for (i in 0 until view.childCount) {
                 applyTextSizeToButtons(view.getChildAt(i), textSize)
+            }
+        }
+    }
+    
+    private fun applyKeySpacing(view: View) {
+        val spacing = SettingsActivity.getKeySpacing(this)
+        Log.d(TAG, "Applying key spacing: $spacing dp")
+        
+        // 모든 버튼에 간격 적용
+        applyKeySpacingToButtons(view, spacing)
+    }
+    
+    private fun applyKeySpacingToButtons(view: View, spacing: Int) {
+        if (view is Button) {
+            val params = view.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            params?.setMargins(spacing, spacing, spacing, spacing)
+            view.layoutParams = params
+        } else if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) {
+                applyKeySpacingToButtons(view.getChildAt(i), spacing)
             }
         }
     }
@@ -130,11 +161,18 @@ class NeoFKeyboardService : InputMethodService() {
             setupCommonFunctionalKeys(view)
             Log.d(TAG, "Common functional keys setup complete")
 
+            // 숫자 행 표시/숨김 및 리스너 설정
+            updateNumberRowVisibility()
+            Log.d(TAG, "Number row visibility updated")
+
             setKeyboardMode(KeyboardMode.KOREAN)
             Log.d(TAG, "Keyboard mode set to KOREAN")
             
             applyTextSize(view)
             Log.d(TAG, "Text size applied")
+            
+            applyKeySpacing(view)
+            Log.d(TAG, "Key spacing applied")
 
             view
         } catch (e: Exception) {
@@ -151,6 +189,13 @@ class NeoFKeyboardService : InputMethodService() {
         
         // 설정 다시 로드
         isSoundEnabled = SettingsActivity.isSoundEnabled(this)
+        isVibrationEnabled = SettingsActivity.isVibrationEnabled(this)
+        isColorEffectEnabled = SettingsActivity.isColorEffectEnabled(this)
+        isScaleEffectEnabled = SettingsActivity.isScaleEffectEnabled(this)
+        touchColor = SettingsActivity.getTouchColor(this)
+        enterLongPressThreshold = SettingsActivity.getEnterLongPressThreshold(this)
+        
+        Log.d(TAG, "Settings reloaded in onStartInput")
         
         // 글자 크기 적용
         keyboardView?.let { view ->
@@ -167,7 +212,13 @@ class NeoFKeyboardService : InputMethodService() {
             val textSize = SettingsActivity.getTextSize(this)
             Log.d(TAG, "Reapplying text size: $textSize sp")
             applyTextSize(view)
-        } ?: Log.w(TAG, "keyboardView is null, cannot apply text size")
+            
+            applyKeySpacing(view)
+            Log.d(TAG, "Key spacing reapplied")
+            
+            // 숫자 행 표시/숨김 업데이트
+            updateNumberRowVisibility()
+        } ?: Log.w(TAG, "keyboardView is null, cannot apply settings")
     }
     
     override fun onBindInput() {
@@ -196,6 +247,12 @@ class NeoFKeyboardService : InputMethodService() {
             backspaceRunnable = null
         }
         
+        // 엔터 핸들러 정리
+        enterLongPressRunnable?.let {
+            enterHandler.removeCallbacks(it)
+            enterLongPressRunnable = null
+        }
+        
         // HangulEngine 리셋
         hangulEngine?.reset()
         composingText = ""
@@ -206,13 +263,17 @@ class NeoFKeyboardService : InputMethodService() {
         koreanKeyboardLayout = null
         englishKeyboardLayout = null
         symbolKeyboardLayout = null
+        numberRowKorean = null
+        numberRowEnglish = null
         englishKeyButtons.clear()
+        buttonOriginalBackgrounds.clear()
         keyboardView = null
         
         // 상태 초기화
         isKoreanShifted = false
         isEnglishShifted = false
         currentKeyboardMode = KeyboardMode.KOREAN
+        numberRowListenersSetup = false
     }
 
     private fun setupViewReferences(view: View) {
@@ -221,6 +282,8 @@ class NeoFKeyboardService : InputMethodService() {
         koreanKeyboardLayout = view.findViewById(R.id.korean_keyboard)
         englishKeyboardLayout = view.findViewById(R.id.english_keyboard)
         symbolKeyboardLayout = view.findViewById(R.id.symbol_keyboard)
+        numberRowKorean = view.findViewById(R.id.number_row_korean)
+        numberRowEnglish = view.findViewById(R.id.number_row_english)
     }
 
     private fun setupHangulEngine() {
@@ -260,8 +323,8 @@ class NeoFKeyboardService : InputMethodService() {
         )
 
         keyButtons.forEach { (id, char) ->
-            view.findViewById<Button?>(id)?.setOnClickListener {
-                playKeySound()
+            val button = view.findViewById<Button?>(id)
+            setupButtonWithFeedback(button) {
                 val charToSend = if (isKoreanShifted) {
                     when (char) {
                         'ㄱ' -> 'ㄲ'; 'ㄷ' -> 'ㄸ'; 'ㅂ' -> 'ㅃ'; 'ㅅ' -> 'ㅆ'; 'ㅈ' -> 'ㅉ'
@@ -286,9 +349,8 @@ class NeoFKeyboardService : InputMethodService() {
             if (id != 0) {
                 val button = view.findViewById<Button?>(id)
                 englishKeyButtons[id] = button
-                button?.setOnClickListener {
-                    playKeySound()
-                    var text = button.text.toString()
+                setupButtonWithFeedback(button) {
+                    var text = button?.text.toString()
                     if (isEnglishShifted) {
                         text = text.uppercase()
                         isEnglishShifted = false
@@ -300,17 +362,17 @@ class NeoFKeyboardService : InputMethodService() {
             }
         }
 
-        view.findViewById<Button?>(R.id.key_shift_eng)?.setOnClickListener {
+        setupButtonWithFeedback(view.findViewById(R.id.key_shift_eng)) {
             isEnglishShifted = !isEnglishShifted
         }
         
         // @ 버튼
-        view.findViewById<Button?>(R.id.key_at_eng)?.setOnClickListener {
+        setupButtonWithFeedback(view.findViewById(R.id.key_at_eng)) {
             currentInputConnection?.commitText("@", 1)
         }
         
         // .? 버튼
-        view.findViewById<Button?>(R.id.key_period_eng)?.setOnClickListener {
+        setupButtonWithFeedback(view.findViewById(R.id.key_period_eng)) {
             if (isEnglishShifted) {
                 currentInputConnection?.commitText("?", 1)
                 isEnglishShifted = false
@@ -320,7 +382,7 @@ class NeoFKeyboardService : InputMethodService() {
         }
         
         // ,! 버튼
-        view.findViewById<Button?>(R.id.key_comma_eng)?.setOnClickListener {
+        setupButtonWithFeedback(view.findViewById(R.id.key_comma_eng)) {
             if (isEnglishShifted) {
                 currentInputConnection?.commitText("!", 1)
                 isEnglishShifted = false
@@ -377,21 +439,47 @@ class NeoFKeyboardService : InputMethodService() {
         )
 
         symbolKeys.forEach { (id, text) ->
-            view.findViewById<Button?>(id)?.setOnClickListener {
-                playKeySound()
+            setupButtonWithFeedback(view.findViewById(id)) {
                 currentInputConnection?.commitText(text, 1)
             }
         }
 
-        view.findViewById<Button?>(R.id.key_space_sym)?.setOnClickListener {
-            playKeySound()
+        setupButtonWithFeedback(view.findViewById(R.id.key_space_sym)) {
             currentInputConnection?.commitText(" ", 1)
         }
 
-        view.findViewById<Button?>(R.id.key_enter_sym)?.setOnClickListener {
-            playKeySound()
-            sendEnterKey()
+        // 심볼 키보드의 엔터키도 동일하게 처리
+        val enterTouchListenerSym = View.OnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    enterPressStartTime = System.currentTimeMillis()
+                    enterLongPressRunnable = Runnable {
+                        playKeySound()
+                        if (v is Button) applyTouchFeedback(v)
+                        sendEnterAction()
+                    }.also {
+                        enterHandler.postDelayed(it, enterLongPressThreshold)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    val pressDuration = System.currentTimeMillis() - enterPressStartTime
+                    enterLongPressRunnable?.let { 
+                        enterHandler.removeCallbacks(it)
+                        enterLongPressRunnable = null
+                    }
+                    
+                    if (event.action == MotionEvent.ACTION_UP && pressDuration < enterLongPressThreshold) {
+                        playKeySound()
+                        if (v is Button) applyTouchFeedback(v)
+                        sendNewLine()
+                    }
+                    true
+                }
+                else -> false
+            }
         }
+        view.findViewById<Button?>(R.id.key_enter_sym)?.setOnTouchListener(enterTouchListenerSym)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -420,57 +508,101 @@ class NeoFKeyboardService : InputMethodService() {
         view.findViewById<Button?>(R.id.key_backspace_eng)?.setOnTouchListener(backspaceTouchListener)
         view.findViewById<Button?>(R.id.key_backspace_sym)?.setOnTouchListener(backspaceTouchListener)
 
-        val enterListener = View.OnClickListener {
-            playKeySound()
-            sendEnterKey()
+        // 엔터키 - 짧게 누르면 줄바꿈, 길게 누르면 액션 실행
+        val enterTouchListener = View.OnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    enterPressStartTime = System.currentTimeMillis()
+                    enterLongPressRunnable = Runnable {
+                        // 길게 누름 - 액션 실행 (보내기, 검색 등)
+                        playKeySound()
+                        if (v is Button) applyTouchFeedback(v)
+                        sendEnterAction()
+                    }.also {
+                        enterHandler.postDelayed(it, enterLongPressThreshold)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    val pressDuration = System.currentTimeMillis() - enterPressStartTime
+                    enterLongPressRunnable?.let { 
+                        enterHandler.removeCallbacks(it)
+                        enterLongPressRunnable = null
+                    }
+                    
+                    // 짧게 누름 - 줄바꿈
+                    if (event.action == MotionEvent.ACTION_UP && pressDuration < enterLongPressThreshold) {
+                        playKeySound()
+                        if (v is Button) applyTouchFeedback(v)
+                        sendNewLine()
+                    }
+                    true
+                }
+                else -> false
+            }
         }
-        view.findViewById<Button?>(R.id.key_enter)?.setOnClickListener(enterListener)
-        view.findViewById<Button?>(R.id.key_enter_eng)?.setOnClickListener(enterListener)
+        view.findViewById<Button?>(R.id.key_enter)?.setOnTouchListener(enterTouchListener)
+        view.findViewById<Button?>(R.id.key_enter_eng)?.setOnTouchListener(enterTouchListener)
 
-        val spaceListener = View.OnClickListener {
-            playKeySound()
+        setupButtonWithFeedback(view.findViewById(R.id.key_space)) {
             if (currentKeyboardMode == KeyboardMode.KOREAN) {
                 hangulEngine?.processKey(' ')
             } else {
                 currentInputConnection?.commitText(" ", 1)
             }
         }
-        view.findViewById<Button?>(R.id.key_space)?.setOnClickListener(spaceListener)
-        view.findViewById<Button?>(R.id.key_space_eng)?.setOnClickListener(spaceListener)
+        setupButtonWithFeedback(view.findViewById(R.id.key_space_eng)) {
+            if (currentKeyboardMode == KeyboardMode.KOREAN) {
+                hangulEngine?.processKey(' ')
+            } else {
+                currentInputConnection?.commitText(" ", 1)
+            }
+        }
 
         // 한글 키보드의 자판 전환 버튼
-        view.findViewById<Button?>(R.id.key_mode_kor)?.setOnClickListener {
+        val modeKorButton = view.findViewById<Button>(R.id.key_mode_kor)
+        Log.d(TAG, "key_mode_kor button: $modeKorButton")
+        setupButtonWithFeedback(modeKorButton) {
+            Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
             val nextMode = when (currentKeyboardMode) {
                 KeyboardMode.KOREAN -> KeyboardMode.ENGLISH
                 KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
                 KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
             }
+            Log.d(TAG, "Switching to: $nextMode")
             setKeyboardMode(nextMode)
         }
 
         // 영어 키보드의 자판 전환 버튼
-        view.findViewById<Button?>(R.id.key_mode_eng)?.setOnClickListener {
+        val modeEngButton = view.findViewById<Button>(R.id.key_mode_eng)
+        Log.d(TAG, "key_mode_eng button: $modeEngButton")
+        setupButtonWithFeedback(modeEngButton) {
+            Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
             val nextMode = when (currentKeyboardMode) {
                 KeyboardMode.KOREAN -> KeyboardMode.ENGLISH
                 KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
                 KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
             }
+            Log.d(TAG, "Switching to: $nextMode")
             setKeyboardMode(nextMode)
         }
 
         // 심볼 키보드의 자판 전환 버튼
-        view.findViewById<Button?>(R.id.key_mode_sym)?.setOnClickListener {
+        val modeSymButton = view.findViewById<Button>(R.id.key_mode_sym)
+        Log.d(TAG, "key_mode_sym button: $modeSymButton")
+        setupButtonWithFeedback(modeSymButton) {
+            Log.d(TAG, "Mode button clicked, current: $currentKeyboardMode")
             val nextMode = when (currentKeyboardMode) {
                 KeyboardMode.KOREAN -> KeyboardMode.ENGLISH
                 KeyboardMode.ENGLISH -> KeyboardMode.SYMBOL
                 KeyboardMode.SYMBOL -> KeyboardMode.KOREAN
             }
+            Log.d(TAG, "Switching to: $nextMode")
             setKeyboardMode(nextMode)
         }
 
         // 한글 키보드의 ㄲ 버튼 (된소리 변환)
-        koreanShiftKey?.setOnClickListener {
-            playKeySound()
+        setupButtonWithFeedback(koreanShiftKey) {
             hangulEngine?.applyDoubleConsonant()
         }
     }
@@ -506,7 +638,14 @@ class NeoFKeyboardService : InputMethodService() {
         }
     }
 
-    private fun sendEnterKey() {
+    private fun sendNewLine() {
+        val ic = currentInputConnection ?: return
+        hangulEngine?.reset()
+        composingText = ""
+        ic.commitText("\n", 1)
+    }
+    
+    private fun sendEnterAction() {
         val ic = currentInputConnection ?: return
         hangulEngine?.reset()
         composingText = ""
@@ -527,14 +666,19 @@ class NeoFKeyboardService : InputMethodService() {
     }
 
     private fun setKeyboardMode(mode: KeyboardMode) {
+        Log.d(TAG, "setKeyboardMode called: $mode")
         if (mode != KeyboardMode.SYMBOL) {
             lastAlphabetMode = mode
         }
         currentKeyboardMode = mode
 
+        Log.d(TAG, "Korean layout: $koreanKeyboardLayout, English: $englishKeyboardLayout, Symbol: $symbolKeyboardLayout")
+        
         koreanKeyboardLayout?.visibility = if (mode == KeyboardMode.KOREAN) View.VISIBLE else View.GONE
         englishKeyboardLayout?.visibility = if (mode == KeyboardMode.ENGLISH) View.VISIBLE else View.GONE
         symbolKeyboardLayout?.visibility = if (mode == KeyboardMode.SYMBOL) View.VISIBLE else View.GONE
+
+        Log.d(TAG, "Visibility set - Korean: ${koreanKeyboardLayout?.visibility}, English: ${englishKeyboardLayout?.visibility}, Symbol: ${symbolKeyboardLayout?.visibility}")
 
         hangulEngine?.reset()
         composingText = ""
@@ -560,5 +704,141 @@ class NeoFKeyboardService : InputMethodService() {
         if (isSoundEnabled) {
             audioManager?.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, 0.5f)
         }
+    }
+    
+    private val buttonOriginalBackgrounds = mutableMapOf<Button, android.graphics.drawable.Drawable?>()
+    
+    private fun applyTouchFeedback(button: Button) {
+        // 진동 피드백
+        if (isVibrationEnabled) {
+            button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }
+        
+        // 색상 효과
+        if (isColorEffectEnabled) {
+            // 원래 배경이 저장되어 있지 않으면 저장
+            if (!buttonOriginalBackgrounds.containsKey(button)) {
+                buttonOriginalBackgrounds[button] = button.background?.constantState?.newDrawable()?.mutate()
+            }
+            
+            // 터치 색상 적용
+            button.setBackgroundColor(touchColor)
+            
+            // 100ms 후 원래 배경으로 복원
+            button.postDelayed({
+                val originalBg = buttonOriginalBackgrounds[button]
+                if (originalBg != null) {
+                    button.background = originalBg.constantState?.newDrawable()?.mutate()
+                }
+            }, 100)
+        }
+        
+        // 크기 효과
+        if (isScaleEffectEnabled) {
+            button.animate()
+                .scaleX(0.9f)
+                .scaleY(0.9f)
+                .setDuration(50)
+                .withEndAction {
+                    button.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(50)
+                        .start()
+                }
+                .start()
+        }
+    }
+    
+    private fun setupButtonWithFeedback(button: Button?, action: () -> Unit) {
+        if (button == null) {
+            Log.w(TAG, "setupButtonWithFeedback called with null button")
+            return
+        }
+        
+        button.setOnClickListener {
+            Log.d(TAG, "Button clicked: ${button.text}")
+            try {
+                applyTouchFeedback(it as Button)
+                playKeySound()
+                action()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in button click handler", e)
+            }
+        }
+    }
+    
+    private var numberRowListenersSetup = false
+    
+    private fun updateNumberRowVisibility() {
+        val showNumberRow = SettingsActivity.isShowNumberRow(this)
+        Log.d(TAG, "=== updateNumberRowVisibility START ===")
+        Log.d(TAG, "showNumberRow: $showNumberRow")
+        Log.d(TAG, "numberRowKorean: $numberRowKorean")
+        Log.d(TAG, "numberRowEnglish: $numberRowEnglish")
+        Log.d(TAG, "numberRowListenersSetup: $numberRowListenersSetup")
+        
+        if (numberRowKorean == null || numberRowEnglish == null) {
+            Log.e(TAG, "Number row views are null! Trying to find them again...")
+            keyboardView?.let { view ->
+                numberRowKorean = view.findViewById(R.id.number_row_korean)
+                numberRowEnglish = view.findViewById(R.id.number_row_english)
+                Log.d(TAG, "After re-finding - Korean: $numberRowKorean, English: $numberRowEnglish")
+            }
+        }
+        
+        numberRowKorean?.visibility = if (showNumberRow) View.VISIBLE else View.GONE
+        numberRowEnglish?.visibility = if (showNumberRow) View.VISIBLE else View.GONE
+        
+        Log.d(TAG, "Visibility set - Korean: ${numberRowKorean?.visibility}, English: ${numberRowEnglish?.visibility}")
+        
+        // 숫자 행 버튼 리스너 설정
+        if (showNumberRow) {
+            if (!numberRowListenersSetup) {
+                Log.d(TAG, "Setting up number row listeners for the first time")
+                setupNumberRowListeners()
+                numberRowListenersSetup = true
+            } else {
+                Log.d(TAG, "Number row listeners already set up")
+            }
+        }
+        
+        Log.d(TAG, "=== updateNumberRowVisibility END ===")
+    }
+    
+    private fun setupNumberRowListeners() {
+        Log.d(TAG, "Setting up number row listeners")
+        
+        // 한글 키보드 숫자 행
+        for (i in 0..9) {
+            val korId = resources.getIdentifier("key_${i}_kor", "id", packageName)
+            if (korId != 0) {
+                val button = keyboardView?.findViewById<Button>(korId)
+                Log.d(TAG, "Korean number button $i: $button")
+                setupButtonWithFeedback(button) {
+                    Log.d(TAG, "Number $i clicked (Korean)")
+                    currentInputConnection?.commitText(i.toString(), 1)
+                }
+            } else {
+                Log.w(TAG, "Korean number button $i not found")
+            }
+        }
+        
+        // 영어 키보드 숫자 행
+        for (i in 0..9) {
+            val engId = resources.getIdentifier("key_${i}_eng_num", "id", packageName)
+            if (engId != 0) {
+                val button = keyboardView?.findViewById<Button>(engId)
+                Log.d(TAG, "English number button $i: $button")
+                setupButtonWithFeedback(button) {
+                    Log.d(TAG, "Number $i clicked (English)")
+                    currentInputConnection?.commitText(i.toString(), 1)
+                }
+            } else {
+                Log.w(TAG, "English number button $i not found")
+            }
+        }
+        
+        Log.d(TAG, "Number row listeners setup complete")
     }
 }
